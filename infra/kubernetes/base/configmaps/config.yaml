@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aiops-config
+data:
+  APP_ENV: "production"
+  APP_DEBUG: "false"
+  APP_WORKERS: "4"
+  DATABASE_POOL_SIZE: "20"
+  REDIS_MAX_CONNECTIONS: "50"
+  QDRANT_COLLECTION: "aiops_knowledge"
+  OPENAI_CHAT_MODEL: "gpt-4o"
+  OPENAI_EMBEDDING_MODEL: "text-embedding-3-large"
+  JWT_ALGORITHM: "HS256"
+  JWT_ACCESS_TOKEN_EXPIRE_MINUTES: "30"
+  LLM_TEMPERATURE: "0.1"
+  LLM_MAX_TOKENS: "4096"
+  RAG_TOP_K: "5"
+  RAG_SIMILARITY_THRESHOLD: "0.75"
+  RATE_LIMIT_PER_MINUTE: "100"
+  AUTO_APPROVE_THRESHOLD: "0.3"
+  HIGH_RISK_THRESHOLD: "0.7"
+  CRITICAL_RISK_THRESHOLD: "0.9"
+  OTEL_SERVICE_NAME: "agentic-aiops"

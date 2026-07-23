@@ -1,0 +1,32 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base/deployments/backend.yaml
+  - ../../base/services/backend.yaml
+  - ../../base/configmaps/config.yaml
+  - ../../base/secrets/secrets.yaml
+
+namespace: aiops-dev
+
+patches:
+  - target:
+      kind: Deployment
+      name: aiops-backend
+    patch: |
+      - op: replace
+        path: /spec/replicas
+        value: 1
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: "256Mi"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: "100m"
+
+configMapGenerator:
+  - name: aiops-config
+    behavior: merge
+    literals:
+      - APP_ENV=development
+      - APP_DEBUG=true
