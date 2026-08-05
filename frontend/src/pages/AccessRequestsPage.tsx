@@ -29,34 +29,34 @@ export default function AccessRequestsPage() {
   };
 
   return (
-    <div className="p-8 max-w-3xl animate-fade-in" style={{ background: 'var(--bg-primary)' }}>
+    <div className="p-4 sm:p-6 lg:p-8 max-w-3xl animate-fade-in" style={{ background: 'var(--bg-primary)' }}>
       {/* Header */}
-      <div className="mb-10">
+      <div className="mb-6 sm:mb-10">
         <div className="flex items-center gap-3 mb-3">
           <div
-            className="w-12 h-12 rounded-xl flex items-center justify-center"
+            className="w-10 sm:w-12 h-10 sm:h-12 rounded-xl flex items-center justify-center"
             style={{ background: 'var(--gradient-1)' }}
           >
-            <Shield className="w-6 h-6 text-white" />
+            <Shield className="w-5 sm:w-6 h-5 sm:h-6 text-white" />
           </div>
           <div>
             <p className="text-xs font-bold tracking-[0.3em] uppercase" style={{ color: 'var(--accent)' }}>
               Request
             </p>
-            <h1 className="text-3xl font-black tracking-tight" style={{ color: 'var(--text-primary)' }}>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight" style={{ color: 'var(--text-primary)' }}>
               Access Request
             </h1>
           </div>
         </div>
-        <p className="text-base" style={{ color: 'var(--text-secondary)' }}>
+        <p className="text-sm sm:text-base" style={{ color: 'var(--text-secondary)' }}>
           Request access to enterprise tools and resources with AI-powered risk assessment.
         </p>
       </div>
 
       {/* Form */}
-      <div className="glass-card p-8 space-y-6">
+      <div className="glass-card p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6">
         {/* Row 1 */}
-        <div className="grid grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
           <div>
             <label className="block text-xs font-bold tracking-wider uppercase mb-2" style={{ color: 'var(--text-muted)' }}>
               Resource Type

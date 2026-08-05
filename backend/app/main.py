@@ -28,7 +28,7 @@ app.add_middleware(
 )
 
 if settings.is_production:
-    app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*.yourcompany.com"])
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
 
 from app.api.routes import auth, chat, access, health, models
 

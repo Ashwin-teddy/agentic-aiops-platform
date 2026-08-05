@@ -1,12 +1,11 @@
-/** @type {import('tailwindcss').Config} */
-export default {
+module.exports = {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
       colors: {
         brand: {
-          DEFAULT: '#ff4d00',
-          hover: '#ff6a2b',
+          DEFAULT: '#0071e3',
+          hover: '#0077ed',
         },
       },
       fontFamily: {

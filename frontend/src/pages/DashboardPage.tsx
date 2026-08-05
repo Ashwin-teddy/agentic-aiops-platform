@@ -22,33 +22,33 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="p-8 space-y-8 animate-fade-in" style={{ background: 'var(--bg-primary)' }}>
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 animate-fade-in" style={{ background: 'var(--bg-primary)' }}>
       {/* Hero Header */}
-      <div className="flex items-end justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <p className="text-xs font-bold tracking-[0.3em] uppercase mb-2" style={{ color: 'var(--accent)' }}>
             Overview
           </p>
-          <h1 className="text-4xl font-black tracking-tight" style={{ color: 'var(--text-primary)' }}>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight" style={{ color: 'var(--text-primary)' }}>
             Dashboard
           </h1>
-          <p className="text-base mt-2" style={{ color: 'var(--text-secondary)' }}>
+          <p className="text-sm sm:text-base mt-1 sm:mt-2" style={{ color: 'var(--text-secondary)' }}>
             Real-time system monitoring and tool health
           </p>
         </div>
         <div
-          className="flex items-center gap-2 px-4 py-2 rounded-full"
+          className="self-start sm:self-auto flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full"
           style={{ background: 'rgba(0, 210, 106, 0.1)', border: '1px solid rgba(0, 210, 106, 0.2)' }}
         >
           <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: 'var(--success)' }} />
-          <span className="text-xs font-bold" style={{ color: 'var(--success)' }}>ALL SYSTEMS OPERATIONAL</span>
+          <span className="text-[10px] sm:text-xs font-bold" style={{ color: 'var(--success)' }}>ALL SYSTEMS OPERATIONAL</span>
         </div>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         {stats.map(({ icon: Icon, label, gradient }) => (
-          <div key={label} className="glass-card p-6 group cursor-default">
+          <div key={label} className="glass-card p-4 sm:p-6 group cursor-default">
             <div className="flex items-center justify-between mb-4">
               <div
                 className="w-12 h-12 rounded-xl flex items-center justify-center"
@@ -64,7 +64,7 @@ export default function DashboardPage() {
             <p className="text-xs font-bold tracking-wider uppercase mb-1" style={{ color: 'var(--text-muted)' }}>
               {label}
             </p>
-            <p className="text-3xl font-black tracking-tight" style={{ color: 'var(--text-primary)' }}>
+            <p className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight" style={{ color: 'var(--text-primary)' }}>
               {getValue(label === 'Tools Active' ? 'tools' : label === 'System Status' ? 'status' : label === 'Sessions' ? 'sessions' : 'response')}
             </p>
           </div>
@@ -72,10 +72,10 @@ export default function DashboardPage() {
       </div>
 
       {/* Tool Health */}
-      <div className="glass-card p-8">
+      <div className="glass-card p-4 sm:p-6 lg:p-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-xl font-extrabold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+            <h3 className="text-lg sm:text-xl font-extrabold tracking-tight" style={{ color: 'var(--text-primary)' }}>
               Tool Health
             </h3>
             <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
@@ -84,7 +84,7 @@ export default function DashboardPage() {
           </div>
           <div
             className="flex items-center gap-2 px-3 py-1.5 rounded-full"
-            style={{ background: 'rgba(255, 77, 0, 0.1)', border: '1px solid rgba(255, 77, 0, 0.2)' }}
+            style={{ background: 'rgba(0, 113, 227, 0.08)', border: '1px solid rgba(0, 113, 227, 0.2)' }}
           >
             <Zap className="w-3 h-3" style={{ color: 'var(--accent)' }} />
             <span className="text-xs font-bold" style={{ color: 'var(--accent)' }}>{tools?.length || 0} Active</span>
@@ -96,7 +96,7 @@ export default function DashboardPage() {
             <div
               key={tool.name}
               className="flex items-center gap-4 p-4 rounded-xl transition-all duration-300 group cursor-default"
-              style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--border)' }}
+              style={{ background: 'rgba(0, 0, 0, 0.03)', border: '1px solid var(--border)' }}
             >
               <div className="relative">
                 <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: 'var(--gradient-1)' }}>

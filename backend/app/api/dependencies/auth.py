@@ -18,12 +18,14 @@ class CurrentUser:
         self,
         user_id: str,
         email: str = "",
+        display_name: str = "",
         roles: list[str] | None = None,
         permissions: list[str] | None = None,
         session_id: str = "",
     ) -> None:
         self.user_id = user_id
         self.email = email
+        self.display_name = display_name
         self.roles = roles or []
         self.permissions = permissions or []
         self.session_id = session_id
@@ -42,6 +44,8 @@ async def get_current_user(
         payload = verify_token(credentials.credentials)
         return CurrentUser(
             user_id=payload.sub,
+            email=payload.email,
+            display_name=payload.display_name,
             roles=payload.roles,
             permissions=payload.permissions,
             session_id=payload.session_id,

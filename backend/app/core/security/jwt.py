@@ -17,6 +17,8 @@ class TokenPayload(BaseModel):
     roles: list[str] = []
     permissions: list[str] = []
     session_id: str = ""
+    email: str = ""
+    display_name: str = ""
 
 
 class TokenPair(BaseModel):
@@ -84,8 +86,9 @@ def create_token_pair(
     roles: list[str] | None = None,
     permissions: list[str] | None = None,
     session_id: str = "",
+    extra_claims: dict[str, Any] | None = None,
 ) -> TokenPair:
-    access = create_access_token(subject, roles, permissions, session_id)
+    access = create_access_token(subject, roles, permissions, session_id, extra_claims)
     refresh = create_refresh_token(subject, session_id)
     return TokenPair(
         access_token=access,

@@ -60,46 +60,46 @@ export default function ChatPage() {
     <div className="flex flex-col h-full" style={{ background: 'var(--bg-primary)' }}>
       {/* Header */}
       <header
-        className="px-8 py-5 border-b flex items-center justify-between"
-        style={{ borderColor: 'var(--border)', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(20px)' }}
+        className="px-4 sm:px-8 py-4 sm:py-5 border-b flex items-center justify-between md:pl-8"
+        style={{ borderColor: 'var(--border)', background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(20px)' }}
       >
         <div>
-          <h2 className="text-xl font-extrabold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+          <h2 className="text-lg sm:text-xl font-extrabold tracking-tight" style={{ color: 'var(--text-primary)' }}>
             IT Operations Assistant
           </h2>
-          <p className="text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+          <p className="text-xs sm:text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>
             Ask anything about incidents, access, or troubleshooting
           </p>
         </div>
         <div
-          className="flex items-center gap-2 px-4 py-2 rounded-full"
+          className="flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full"
           style={{ background: 'rgba(0, 210, 106, 0.1)', border: '1px solid rgba(0, 210, 106, 0.2)' }}
         >
           <div className="w-2 h-2 rounded-full" style={{ background: 'var(--success)' }} />
-          <span className="text-xs font-semibold" style={{ color: 'var(--success)' }}>Online</span>
+          <span className="text-[10px] sm:text-xs font-semibold" style={{ color: 'var(--success)' }}>Online</span>
         </div>
       </header>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-8 py-6">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-6">
         {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full animate-fade-in">
+          <div className="flex flex-col items-center justify-center h-full animate-fade-in px-4">
             <div
-              className="w-20 h-20 rounded-2xl flex items-center justify-center mb-6"
+              className="w-16 sm:w-20 h-16 sm:h-20 rounded-2xl flex items-center justify-center mb-6"
               style={{ background: 'var(--gradient-1)', animation: 'pulse-glow 3s infinite' }}
             >
-              <Sparkles className="w-10 h-10 text-white" />
+              <Sparkles className="w-8 sm:w-10 h-8 sm:h-10 text-white" />
             </div>
             <h3
-              className="text-3xl font-extrabold tracking-tight mb-2"
+              className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-2 text-center"
               style={{ color: 'var(--text-primary)' }}
             >
               How can I help you?
             </h3>
-            <p className="text-base max-w-md text-center" style={{ color: 'var(--text-secondary)' }}>
+            <p className="text-sm sm:text-base max-w-md text-center" style={{ color: 'var(--text-secondary)' }}>
               Troubleshoot issues, request access, search runbooks, or check incident status — all powered by AI.
             </p>
-            <div className="grid grid-cols-2 gap-3 mt-8 w-full max-w-lg">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-8 w-full max-w-lg">
               {quickActions.map((q) => (
                 <button
                   key={q.label}
@@ -130,11 +130,11 @@ export default function ChatPage() {
               </div>
             )}
             <div
-              className={`max-w-[70%] rounded-2xl px-5 py-4 ${
+              className={`max-w-[85%] sm:max-w-[70%] rounded-2xl px-4 sm:px-5 py-4 ${
                 msg.role === 'user' ? 'rounded-br-md' : 'rounded-bl-md'
               }`}
               style={{
-                background: msg.role === 'user' ? 'var(--accent)' : 'var(--bg-card)',
+                background: msg.role === 'user' ? 'var(--accent)' : 'var(--bg-secondary)',
                 color: msg.role === 'user' ? '#fff' : 'var(--text-primary)',
                 border: msg.role === 'user' ? 'none' : '1px solid var(--border)',
               }}
@@ -145,7 +145,7 @@ export default function ChatPage() {
                   Intent: {msg.intent}
                 </div>
               )}
-              <div className="prose prose-invert prose-sm max-w-none" style={{ color: msg.role === 'user' ? '#fff' : 'var(--text-primary)' }}>
+              <div className="prose prose-sm max-w-none" style={{ color: msg.role === 'user' ? '#fff' : 'var(--text-primary)' }}>
                 <ReactMarkdown>{msg.content}</ReactMarkdown>
               </div>
               {msg.citations && msg.citations.length > 0 && (
@@ -181,7 +181,7 @@ export default function ChatPage() {
             </div>
             <div
               className="rounded-2xl rounded-bl-md px-5 py-4 flex items-center gap-3"
-              style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
+              style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
             >
               <Loader2 className="w-4 h-4 animate-spin" style={{ color: 'var(--accent)' }} />
               <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Thinking...</span>
@@ -192,7 +192,7 @@ export default function ChatPage() {
       </div>
 
       {/* Input */}
-      <div className="px-8 py-5 border-t" style={{ borderColor: 'var(--border)', background: 'rgba(0,0,0,0.3)' }}>
+      <div className="px-4 sm:px-8 py-4 sm:py-5 border-t md:pl-8" style={{ borderColor: 'var(--border)', background: 'rgba(255,255,255,0.8)' }}>
         <div className="flex gap-3 items-center max-w-4xl mx-auto">
           <div className="flex-1 relative">
             <input

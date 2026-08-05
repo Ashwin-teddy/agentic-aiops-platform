@@ -15,6 +15,7 @@ from qdrant_client.models import (
 )
 
 from app.core.config.settings import settings
+from app.core.llm.types import AVAILABLE_MODELS
 from app.observability.logging import get_logger
 
 logger = get_logger(__name__)
@@ -27,7 +28,8 @@ class QdrantVectorStore:
             api_key=settings.qdrant_api_key or None,
         )
         self.collection = settings.qdrant_collection
-        self.vector_size = settings.openai_embedding_dims
+        embedding_config = AVAILABLE_MODELS.get(settings.default_embedding_model)
+        self.vector_size = embedding_config.embedding_dims if embedding_config else 768
 
     async def ensure_collection(self) -> None:
         collections = self.client.get_collections().collections
@@ -70,12 +72,13 @@ class QdrantVectorStore:
         query_filter = None
         if source_filter:
             query_filter = Filter(must=[FieldCondition(key="source", match=MatchValue(value=source_filter))])
-        results = self.client.search(
+        results = self.client.query_points(
             collection_name=self.collection,
-            query_vector=query_embedding,
+            query=query_embedding,
             limit=top_k,
             score_threshold=score_threshold,
             query_filter=query_filter,
+            with_payload=True,
         )
         return [
             {
@@ -87,7 +90,7 @@ class QdrantVectorStore:
                 "source_url": hit.payload.get("source_url", ""),
                 "metadata": hit.payload.get("metadata", {}),
             }
-            for hit in results
+            for hit in results.points
         ]
 
     async def delete_points(self, point_ids: list[str]) -> None:

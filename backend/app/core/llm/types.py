@@ -185,6 +185,18 @@ AVAILABLE_MODELS: dict[str, ModelConfig] = {
     ),
 
     # Ollama / Self-Hosted Models
+    "llama3.2": ModelConfig(
+        provider=ModelProvider.OLLAMA, model_id="llama3.2", tier=ModelTier.BALANCED,
+        max_tokens=8192, context_window=128_000, input_cost_per_million=0.0,
+        output_cost_per_million=0.0, supports_tools=True,
+        base_url="http://localhost:11434", display_name="Llama 3.2 (Self-hosted)",
+    ),
+    "nomic-embed-text": ModelConfig(
+        provider=ModelProvider.OLLAMA, model_id="nomic-embed-text", tier=ModelTier.EMBEDDING,
+        max_tokens=8192, context_window=8192, input_cost_per_million=0.0,
+        output_cost_per_million=0.0, base_url="http://localhost:11434",
+        embedding_dims=768, display_name="Nomic Embed Text (Self-hosted)",
+    ),
     "llama-4-maverick": ModelConfig(
         provider=ModelProvider.OLLAMA, model_id="llama4-maverick", tier=ModelTier.BALANCED,
         max_tokens=32768, context_window=1_000_000, input_cost_per_million=0.0,
@@ -218,14 +230,21 @@ AVAILABLE_MODELS: dict[str, ModelConfig] = {
 }
 
 TASK_MODEL_ROUTING: dict[TaskType, list[str]] = {
-    TaskType.INTENT_DETECTION: ["claude-haiku-3.5", "gpt-5.4-nano", "gpt-4o-mini", "gemini-3.5-flash"],
-    TaskType.PLANNING: ["gpt-5.5-pro", "claude-opus-4", "gpt-4.1", "gemini-3.1-pro"],
-    TaskType.REASONING: ["gpt-5.5-pro", "claude-opus-4", "o3-mini", "deepseek-v4-pro"],
-    TaskType.TROUBLESHOOTING: ["gpt-4.1", "claude-sonnet-4", "o3-mini", "gemini-3.1-pro"],
-    TaskType.RAG_ANSWER: ["gpt-4.1", "claude-sonnet-4", "gemini-3.1-pro", "llama-4-maverick"],
-    TaskType.CODE_ANALYSIS: ["gpt-4.1", "o3-mini", "deepseek-v4-pro", "claude-sonnet-4"],
-    TaskType.SUMMARIZATION: ["gpt-4o-mini", "claude-haiku-3.5", "gemini-3.5-flash"],
-    TaskType.CLASSIFICATION: ["gpt-4o-mini", "claude-haiku-3.5", "gemini-3.5-flash", "gpt-5.4-nano"],
-    TaskType.GENERAL: ["gpt-4o", "claude-sonnet-4", "gemini-3.1-pro", "llama-4-maverick"],
-    TaskType.EMBEDDING: ["text-embedding-3-large", "text-embedding-3-small"],
+    TaskType.INTENT_DETECTION: ["llama3.2", "llama-4-maverick", "mistral-large-2"],
+    TaskType.PLANNING: ["llama3.2", "llama-4-maverick", "deepseek-v4-pro"],
+    TaskType.REASONING: ["llama3.2", "llama-4-maverick", "deepseek-v4-pro"],
+    TaskType.TROUBLESHOOTING: ["llama3.2", "llama-4-maverick", "llama-3.3-70b"],
+    TaskType.RAG_ANSWER: ["llama3.2", "llama-4-maverick", "llama-3.3-70b"],
+    TaskType.CODE_ANALYSIS: ["llama3.2", "deepseek-v4-pro", "llama-4-maverick"],
+    TaskType.SUMMARIZATION: ["llama3.2", "mistral-large-2", "llama-4-maverick"],
+    TaskType.CLASSIFICATION: ["llama3.2", "llama-4-maverick", "mistral-large-2"],
+    TaskType.GENERAL: ["llama3.2", "llama-4-maverick", "mistral-large-2"],
+    TaskType.EMBEDDING: ["nomic-embed-text"],
 }
+
+
+def apply_environment_overrides(ollama_base_url: str | None = None) -> None:
+    base_url = ollama_base_url or "http://localhost:11434"
+    for config in AVAILABLE_MODELS.values():
+        if config.provider == ModelProvider.OLLAMA:
+            config.base_url = base_url

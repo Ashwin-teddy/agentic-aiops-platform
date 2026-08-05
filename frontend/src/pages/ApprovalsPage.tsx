@@ -7,7 +7,7 @@ const riskColor = (level: string) => {
   switch (level?.toLowerCase()) {
     case 'low': return { bg: 'rgba(0, 210, 106, 0.1)', border: 'rgba(0, 210, 106, 0.2)', text: 'var(--success)' };
     case 'medium': return { bg: 'rgba(255, 193, 7, 0.1)', border: 'rgba(255, 193, 7, 0.2)', text: 'var(--warning)' };
-    case 'high': return { bg: 'rgba(255, 77, 0, 0.1)', border: 'rgba(255, 77, 0, 0.2)', text: 'var(--accent)' };
+    case 'high': return { bg: 'rgba(255, 149, 0, 0.12)', border: 'rgba(255, 149, 0, 0.3)', text: '#ff9500' };
     case 'critical': return { bg: 'rgba(255, 59, 59, 0.1)', border: 'rgba(255, 59, 59, 0.2)', text: 'var(--error)' };
     default: return { bg: 'rgba(255, 255, 255, 0.05)', border: 'var(--border)', text: 'var(--text-secondary)' };
   }
@@ -25,22 +25,22 @@ export default function ApprovalsPage() {
   };
 
   return (
-    <div className="p-8 max-w-5xl animate-fade-in" style={{ background: 'var(--bg-primary)' }}>
+    <div className="p-4 sm:p-6 lg:p-8 max-w-5xl animate-fade-in" style={{ background: 'var(--bg-primary)' }}>
       {/* Header */}
-      <div className="flex items-end justify-between mb-10">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6 sm:mb-10">
         <div>
           <p className="text-xs font-bold tracking-[0.3em] uppercase mb-2" style={{ color: 'var(--accent)' }}>
             Approvals
           </p>
-          <h1 className="text-4xl font-black tracking-tight" style={{ color: 'var(--text-primary)' }}>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight" style={{ color: 'var(--text-primary)' }}>
             Pending Approvals
           </h1>
-          <p className="text-base mt-2" style={{ color: 'var(--text-secondary)' }}>
+          <p className="text-sm sm:text-base mt-1 sm:mt-2" style={{ color: 'var(--text-secondary)' }}>
             Review and act on access requests
           </p>
         </div>
         <div
-          className="flex items-center gap-2 px-4 py-2 rounded-full"
+          className="self-start sm:self-auto flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full"
           style={{ background: 'rgba(255, 193, 7, 0.1)', border: '1px solid rgba(255, 193, 7, 0.2)' }}
         >
           <Clock className="w-3.5 h-3.5" style={{ color: 'var(--warning)' }} />
@@ -57,10 +57,10 @@ export default function ApprovalsPage() {
           return (
             <div
               key={a.approval_id}
-              className="glass-card p-6 animate-slide-up"
+              className="glass-card p-4 sm:p-6 animate-slide-up"
               style={{ animationDelay: `${i * 0.05}s` }}
             >
-              <div className="flex items-start justify-between gap-6">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 sm:gap-6">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-3">
                     <div
@@ -94,10 +94,10 @@ export default function ApprovalsPage() {
                   </div>
                 </div>
 
-                <div className="flex gap-2 shrink-0">
+                <div className="flex gap-2 sm:shrink-0">
                   <button
                     onClick={() => handleDecision(a.approval_id, 'approved')}
-                    className="flex items-center gap-1.5 px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-300 hover:scale-105"
+                    className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 sm:px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-300 hover:scale-105"
                     style={{
                       background: 'rgba(0, 210, 106, 0.15)',
                       color: 'var(--success)',
@@ -109,7 +109,7 @@ export default function ApprovalsPage() {
                   </button>
                   <button
                     onClick={() => handleDecision(a.approval_id, 'rejected')}
-                    className="flex items-center gap-1.5 px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-300 hover:scale-105"
+                    className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 sm:px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-300 hover:scale-105"
                     style={{
                       background: 'rgba(255, 59, 59, 0.15)',
                       color: 'var(--error)',
@@ -129,7 +129,7 @@ export default function ApprovalsPage() {
           <div className="glass-card flex flex-col items-center justify-center py-20">
             <div
               className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
-              style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid var(--border)' }}
+              style={{ background: 'rgba(0, 0, 0, 0.03)', border: '1px solid var(--border)' }}
             >
               <CheckSquare className="w-8 h-8" style={{ color: 'var(--text-muted)' }} />
             </div>

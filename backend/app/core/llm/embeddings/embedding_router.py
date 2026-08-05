@@ -2,9 +2,17 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.core.config.settings import settings
 from app.core.llm.adapters.base import BaseEmbeddingAdapter
 from app.core.llm.adapters.openai_adapter import OpenAIEmbeddingAdapter
-from app.core.llm.types import ModelConfig, ModelProvider, AVAILABLE_MODELS, TaskType
+from app.core.llm.adapters.ollama_adapter import OllamaEmbeddingAdapter
+from app.core.llm.types import (
+    ModelConfig,
+    ModelProvider,
+    AVAILABLE_MODELS,
+    TaskType,
+    apply_environment_overrides,
+)
 from app.observability.logging import get_logger
 
 logger = get_logger(__name__)
@@ -12,8 +20,9 @@ logger = get_logger(__name__)
 
 class EmbeddingRouter:
     def __init__(self) -> None:
+        apply_environment_overrides(settings.ollama_base_url)
         self._adapters: dict[str, BaseEmbeddingAdapter] = {}
-        self._default_model: str = "text-embedding-3-large"
+        self._default_model: str = settings.default_embedding_model
 
     def _get_or_create(self, model_key: str) -> BaseEmbeddingAdapter:
         if model_key not in self._adapters:
@@ -26,6 +35,8 @@ class EmbeddingRouter:
     def _create_adapter(self, config: ModelConfig) -> BaseEmbeddingAdapter:
         if config.provider == ModelProvider.OPENAI:
             return OpenAIEmbeddingAdapter(config)
+        elif config.provider == ModelProvider.OLLAMA:
+            return OllamaEmbeddingAdapter(config)
         raise ValueError(f"Embedding not supported for provider: {config.provider}")
 
     def set_default(self, model_key: str) -> None:

@@ -67,8 +67,8 @@ class AIOpsWorkflow:
         self.audit_agent = AuditAgent()
         self.memory_manager = MemoryManager()
         self.tool_registry = get_tool_registry()
-        self.graph = self._build_graph()
         self.memory = MemorySaver()
+        self.graph = self._build_graph()
 
     def _build_graph(self) -> StateGraph:
         workflow = StateGraph(AIOpsState)

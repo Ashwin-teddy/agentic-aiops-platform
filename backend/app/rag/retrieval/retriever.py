@@ -25,12 +25,16 @@ class RAGRetriever:
         top_k = top_k or settings.rag_top_k
         score_threshold = score_threshold or settings.rag_similarity_threshold
         query_embedding = await self.embedding_service.embed_text(query)
-        results = await self.vector_store.search(
-            query_embedding=query_embedding,
-            top_k=top_k,
-            score_threshold=score_threshold,
-            source_filter=source_filter,
-        )
+        try:
+            results = await self.vector_store.search(
+                query_embedding=query_embedding,
+                top_k=top_k,
+                score_threshold=score_threshold,
+                source_filter=source_filter,
+            )
+        except Exception as e:
+            logger.warning("rag_retrieval_failed", error=str(e), fallback="empty_results")
+            results = []
         logger.info("rag_retrieval", query_length=len(query), results_count=len(results))
         return results
 

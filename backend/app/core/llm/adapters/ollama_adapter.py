@@ -5,11 +5,12 @@ from typing import Any, AsyncGenerator
 
 import httpx
 
-from app.core.llm.adapters.base import BaseLLMAdapter
+from app.core.llm.adapters.base import BaseLLMAdapter, BaseEmbeddingAdapter
 from app.core.llm.types import (
     LLMMessage,
     LLMResponse,
     LLMUsage,
+    EmbeddingResult,
     ModelConfig,
     ModelProvider,
 )
@@ -22,6 +23,7 @@ class OllamaAdapter(BaseLLMAdapter):
     def __init__(self, config: ModelConfig) -> None:
         super().__init__(config)
         self.base_url = config.base_url or "http://localhost:11434"
+        self.headers = {"ngrok-skip-browser-warning": "true"}
 
     async def chat(
         self,
@@ -57,7 +59,7 @@ class OllamaAdapter(BaseLLMAdapter):
                 })
             payload["tools"] = ollama_tools
         async with httpx.AsyncClient(timeout=300) as client:
-            response = await client.post(f"{self.base_url}/api/chat", json=payload)
+            response = await client.post(f"{self.base_url}/api/chat", json=payload, headers=self.headers)
             response.raise_for_status()
             data = response.json()
         message = data.get("message", {})
@@ -106,7 +108,7 @@ class OllamaAdapter(BaseLLMAdapter):
             "options": {"temperature": temperature, "num_predict": max_tokens or self.config.max_tokens},
         }
         async with httpx.AsyncClient(timeout=300) as client:
-            async with client.stream("POST", f"{self.base_url}/api/chat", json=payload) as response:
+            async with client.stream("POST", f"{self.base_url}/api/chat", json=payload, headers=self.headers) as response:
                 async for line in response.aiter_lines():
                     if line.strip():
                         try:
@@ -119,7 +121,42 @@ class OllamaAdapter(BaseLLMAdapter):
     async def health_check(self) -> bool:
         try:
             async with httpx.AsyncClient(timeout=5) as client:
-                response = await client.get(f"{self.base_url}/api/tags")
+                response = await client.get(f"{self.base_url}/api/tags", headers=self.headers)
+                return response.status_code == 200
+        except Exception:
+            return False
+
+
+class OllamaEmbeddingAdapter(BaseEmbeddingAdapter):
+    def __init__(self, config: ModelConfig) -> None:
+        super().__init__(config)
+        self.base_url = config.base_url or "http://localhost:11434"
+        self.headers = {"ngrok-skip-browser-warning": "true"}
+
+    async def embed_texts(self, texts: list[str]) -> EmbeddingResult:
+        payload = {
+            "model": self.model_id,
+            "input": texts,
+        }
+        async with httpx.AsyncClient(timeout=300) as client:
+            response = await client.post(f"{self.base_url}/api/embed", json=payload, headers=self.headers)
+            response.raise_for_status()
+            data = response.json()
+        embeddings = data.get("embeddings", [])
+        total_tokens = sum(len(t.split()) for t in texts)
+        usage = LLMUsage(prompt_tokens=total_tokens, total_tokens=total_tokens, cost_usd=0.0)
+        return EmbeddingResult(
+            embeddings=embeddings,
+            model=self.model_id,
+            provider=ModelProvider.OLLAMA,
+            dimensions=self.dimensions or (len(embeddings[0]) if embeddings else 0),
+            usage=usage,
+        )
+
+    async def health_check(self) -> bool:
+        try:
+            async with httpx.AsyncClient(timeout=5) as client:
+                response = await client.get(f"{self.base_url}/api/tags", headers=self.headers)
                 return response.status_code == 200
         except Exception:
             return False

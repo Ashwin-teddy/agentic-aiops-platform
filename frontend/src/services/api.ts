@@ -32,6 +32,8 @@ export const chatAPI = {
 
 export const authAPI = {
   login: (email: string, password: string) => api.post('/auth/login', { email, password }),
+  register: (email: string, password: string, display_name: string) =>
+    api.post('/auth/register', { email, password, display_name }),
   getMe: () => api.get('/auth/me'),
   refreshToken: (refreshToken: string) => api.post('/auth/refresh', { refresh_token: refreshToken }),
 };

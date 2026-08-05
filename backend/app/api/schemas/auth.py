@@ -8,6 +8,12 @@ class LoginRequest(BaseModel):
     password: str = Field(..., description="User password")
 
 
+class RegisterRequest(BaseModel):
+    email: str = Field(..., description="User email")
+    password: str = Field(..., min_length=6, description="User password")
+    display_name: str = Field(..., min_length=1, description="User display name")
+
+
 class AzureADLoginRequest(BaseModel):
     code: str = Field(..., description="Authorization code from Azure AD")
 

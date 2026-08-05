@@ -17,19 +17,22 @@ from app.core.llm.types import (
     TaskType,
     AVAILABLE_MODELS,
     TASK_MODEL_ROUTING,
+    apply_environment_overrides,
 )
 from app.observability.logging import get_logger
 from app.observability.metrics import LLM_TOKENS_USED
+from app.core.config.settings import settings
 
 logger = get_logger(__name__)
 
 
 class ModelRouter:
     def __init__(self, fallback_enabled: bool = True) -> None:
+        apply_environment_overrides(settings.ollama_base_url)
         self._adapters: dict[str, BaseLLMAdapter] = {}
         self._task_overrides: dict[TaskType, str] = {}
         self._fallback_enabled = fallback_enabled
-        self._default_model: str = "gpt-4o"
+        self._default_model: str = "llama3.2"
 
     def _get_or_create_adapter(self, model_key: str) -> BaseLLMAdapter:
         if model_key not in self._adapters:
