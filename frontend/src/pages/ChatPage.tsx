@@ -44,11 +44,15 @@ export default function ChatPage() {
         citations: data.citations,
         status: data.status,
       });
-    } catch {
+    } catch (err: any) {
+      const detail = err.response?.data?.detail;
+      const offline = !err.response || /connect|network|timeout/i.test(String(err.message));
       addMessage({
         id: crypto.randomUUID(),
         role: 'assistant',
-        content: 'Sorry, I encountered an error processing your request. Please try again.',
+        content: offline
+          ? 'The AI service is currently unavailable. Please make sure the AI server (Ollama) is running and try again.'
+          : detail || 'Sorry, I encountered an error processing your request. Please try again.',
         timestamp: new Date().toISOString(),
       });
     } finally {

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 from typing import Any, AsyncGenerator
 
@@ -17,6 +18,39 @@ from app.core.llm.types import (
 from app.observability.logging import get_logger
 
 logger = get_logger(__name__)
+
+RETRYABLE_STATUS = {404, 429, 502, 503, 504}
+MAX_RETRIES = 3
+
+
+async def _post_with_retry(
+    client: httpx.AsyncClient,
+    url: str,
+    payload: dict[str, Any],
+    headers: dict[str, str],
+) -> httpx.Response:
+    for attempt in range(MAX_RETRIES):
+        try:
+            response = await client.post(url, json=payload, headers=headers)
+            if response.status_code in RETRYABLE_STATUS and attempt < MAX_RETRIES - 1:
+                delay = 0.5 * (2 ** attempt)
+                logger.warning(
+                    "ollama_retry", url=url, status=response.status_code,
+                    attempt=attempt + 1, retry_in_s=delay,
+                )
+                await asyncio.sleep(delay)
+                continue
+            return response
+        except (httpx.ConnectError, httpx.TimeoutException) as e:
+            if attempt >= MAX_RETRIES - 1:
+                raise
+            delay = 0.5 * (2 ** attempt)
+            logger.warning(
+                "ollama_retry_connect", url=url, error=str(e),
+                attempt=attempt + 1, retry_in_s=delay,
+            )
+            await asyncio.sleep(delay)
+    raise httpx.ConnectError("all retries failed")
 
 
 class OllamaAdapter(BaseLLMAdapter):
@@ -59,7 +93,7 @@ class OllamaAdapter(BaseLLMAdapter):
                 })
             payload["tools"] = ollama_tools
         async with httpx.AsyncClient(timeout=300) as client:
-            response = await client.post(f"{self.base_url}/api/chat", json=payload, headers=self.headers)
+            response = await _post_with_retry(client, f"{self.base_url}/api/chat", payload, self.headers)
             response.raise_for_status()
             data = response.json()
         message = data.get("message", {})
@@ -139,7 +173,7 @@ class OllamaEmbeddingAdapter(BaseEmbeddingAdapter):
             "input": texts,
         }
         async with httpx.AsyncClient(timeout=300) as client:
-            response = await client.post(f"{self.base_url}/api/embed", json=payload, headers=self.headers)
+            response = await _post_with_retry(client, f"{self.base_url}/api/embed", payload, self.headers)
             response.raise_for_status()
             data = response.json()
         embeddings = data.get("embeddings", [])
