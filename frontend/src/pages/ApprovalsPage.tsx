@@ -9,8 +9,20 @@ const riskColor = (level: string) => {
     case 'medium': return { bg: 'rgba(255, 193, 7, 0.1)', border: 'rgba(255, 193, 7, 0.2)', text: 'var(--warning)' };
     case 'high': return { bg: 'rgba(255, 149, 0, 0.12)', border: 'rgba(255, 149, 0, 0.3)', text: '#ff9500' };
     case 'critical': return { bg: 'rgba(255, 59, 59, 0.1)', border: 'rgba(255, 59, 59, 0.2)', text: 'var(--error)' };
-    default: return { bg: 'rgba(255, 255, 255, 0.05)', border: 'var(--border)', text: 'var(--text-secondary)' };
+    default: return { bg: 'rgba(0, 0, 0, 0.04)', border: 'var(--border)', text: 'var(--text-secondary)' };
   }
+};
+
+const resourceLabels: Record<string, string> = {
+  jira: 'Jira',
+  confluence: 'Confluence',
+  google_drive: 'Google Drive',
+  github: 'GitHub',
+  aws_iam: 'AWS IAM',
+  kubernetes: 'Kubernetes',
+  azure_ad: 'Azure AD',
+  okta: 'Okta',
+  servicenow: 'ServiceNow',
 };
 
 export default function ApprovalsPage() {
@@ -71,7 +83,7 @@ export default function ApprovalsPage() {
                     </div>
                     <div>
                       <h4 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>
-                        {a.resource_type} — {a.access_type}
+                        {resourceLabels[a.resource_type] || a.resource_type} — {a.access_type}
                       </h4>
                       <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
                         ID: {a.approval_id}

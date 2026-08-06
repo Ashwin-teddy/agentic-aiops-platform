@@ -68,6 +68,7 @@ export default function AccessRequestsPage() {
             >
               <option value="jira">Jira</option>
               <option value="confluence">Confluence</option>
+              <option value="google_drive">Google Drive</option>
               <option value="github">GitHub</option>
               <option value="aws_iam">AWS IAM</option>
               <option value="kubernetes">Kubernetes</option>
