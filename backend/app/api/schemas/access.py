@@ -24,4 +24,5 @@ class AccessRequestResponse(BaseModel):
     risk_score: float
     status: str
     message: str = ""
+    approval_id: str = ""
     created_at: str = ""

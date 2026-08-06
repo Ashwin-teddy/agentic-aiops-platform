@@ -40,7 +40,9 @@ export interface Approval {
   approval_id: string;
   request_id: string;
   requester_id: string;
+  requester_email?: string;
   resource_type: string;
+  resource_identifier?: string;
   access_type: string;
   risk_level: string;
   risk_score: number;

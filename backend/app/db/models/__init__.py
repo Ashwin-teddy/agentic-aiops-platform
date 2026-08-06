@@ -5,9 +5,10 @@ from app.db.models.incident import IncidentModel
 from app.db.models.approval import ApprovalModel
 from app.db.models.audit_log import AuditLogModel
 from app.db.models.knowledge import KnowledgeDocumentModel
+from app.db.models.google_drive_token import GoogleDriveTokenModel
 
 __all__ = [
     "UserModel", "WorkflowModel", "WorkflowExecutionModel",
     "AccessRequestModel", "IncidentModel", "ApprovalModel",
-    "AuditLogModel", "KnowledgeDocumentModel",
+    "AuditLogModel", "KnowledgeDocumentModel", "GoogleDriveTokenModel",
 ]

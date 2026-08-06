@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { CheckSquare, Check, X, Clock, Shield } from 'lucide-react';
+import { useState } from 'react';
+import { CheckSquare, Check, X, Clock, Shield, Share2 } from 'lucide-react';
 import { accessAPI } from '../services/api';
 import type { Approval } from '../types';
 
@@ -26,13 +27,26 @@ const resourceLabels: Record<string, string> = {
 };
 
 export default function ApprovalsPage() {
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const { data: approvals, refetch } = useQuery({
     queryKey: ['approvals'],
     queryFn: () => accessAPI.getPending().then((r) => r.data),
   });
 
   const handleDecision = async (approvalId: string, decision: string) => {
-    await accessAPI.approve(approvalId, decision, '');
+    try {
+      const { data } = await accessAPI.approve(approvalId, decision, '');
+      const share = data?.share_result;
+      if (share) {
+        setFeedback(
+          share.success
+            ? { type: 'success', message: share.message }
+            : { type: 'error', message: share.error }
+        );
+      }
+    } catch {
+      setFeedback({ type: 'error', message: 'Failed to record decision.' });
+    }
     refetch();
   };
 
@@ -93,6 +107,13 @@ export default function ApprovalsPage() {
                   <p className="text-sm mb-3" style={{ color: 'var(--text-secondary)' }}>
                     {a.justification || 'No justification provided'}
                   </p>
+                  {a.resource_identifier && (
+                    <p className="text-xs mb-3 flex items-center gap-1.5 font-mono" style={{ color: 'var(--text-muted)' }}>
+                      <Share2 className="w-3.5 h-3.5" />
+                      {a.resource_identifier}
+                      {a.requester_email ? ` → ${a.requester_email}` : ''}
+                    </p>
+                  )}
                   <div className="flex items-center gap-3">
                     <span
                       className="px-3 py-1 rounded-full text-xs font-bold"
@@ -154,6 +175,33 @@ export default function ApprovalsPage() {
           </div>
         )}
       </div>
+
+      {feedback && (
+        <div
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-start gap-3 px-5 py-4 rounded-2xl shadow-2xl animate-slide-up"
+          style={{
+            background: feedback.type === 'success' ? 'rgba(0, 210, 106, 0.12)' : 'rgba(255, 59, 59, 0.12)',
+            border: `1px solid ${feedback.type === 'success' ? 'rgba(0, 210, 106, 0.3)' : 'rgba(255, 59, 59, 0.3)'}`,
+            backdropFilter: 'blur(12px)',
+          }}
+        >
+          {feedback.type === 'success' ? (
+            <Check className="w-5 h-5 mt-0.5 shrink-0" style={{ color: 'var(--success)' }} />
+          ) : (
+            <X className="w-5 h-5 mt-0.5 shrink-0" style={{ color: 'var(--error)' }} />
+          )}
+          <p className="text-sm font-semibold max-w-md" style={{ color: 'var(--text-primary)' }}>
+            {feedback.message}
+          </p>
+          <button
+            onClick={() => setFeedback(null)}
+            className="ml-2 text-xs font-bold hover:opacity-70"
+            style={{ color: 'var(--text-muted)' }}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -46,6 +46,12 @@ export const accessAPI = {
     api.post(`/access/approve/${approvalId}`, { decision, comments }),
 };
 
+export const driveAPI = {
+  getAuthUrl: () => api.get('/drive/auth-url'),
+  getStatus: () => api.get('/drive/status'),
+  disconnect: () => api.post('/drive/disconnect'),
+};
+
 export const healthAPI = {
   check: () => api.get('/health'),
   tools: () => api.get('/tools'),

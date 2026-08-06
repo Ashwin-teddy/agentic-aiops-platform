@@ -191,16 +191,32 @@ class AIOpsWorkflow:
         entities = state["entities"]
         risk_level = RiskLevel(state["risk_evaluation"].get("risk_level", "medium"))
         risk_score = state["risk_evaluation"].get("risk_score", 0.5)
+        requester_email = await self._get_user_email(state["user_id"])
         approval = await self.approval_agent.create_approval_request(
             request_id=str(uuid.uuid4()),
             requester_id=state["user_id"],
+            requester_email=requester_email,
             resource_type=entities.get("resource_type", "unknown"),
+            resource_identifier=entities.get("resource_identifier", ""),
             access_type=entities.get("access_level", "read"),
             risk_level=risk_level,
             risk_score=risk_score,
             justification=entities.get("justification", ""),
         )
         return {"approval_result": approval, "status": "approval_requested"}
+
+    async def _get_user_email(self, user_id: str) -> str:
+        try:
+            from sqlalchemy import select
+            from app.db.models.user import UserModel
+            from app.db.session import get_session
+
+            async with get_session() as session:
+                result = await session.execute(select(UserModel.email).where(UserModel.id == user_id))
+                row = result.scalar_one_or_none()
+                return str(row) if row else ""
+        except Exception:
+            return ""
 
     async def _execute_remediation_node(self, state: AIOpsState) -> dict[str, Any]:
         diagnosis = state.get("diagnosis", {})

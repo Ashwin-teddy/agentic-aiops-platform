@@ -30,13 +30,14 @@ app.add_middleware(
 if settings.is_production:
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
 
-from app.api.routes import auth, chat, access, health, models
+from app.api.routes import auth, chat, access, health, models, drive
 
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(chat.router, prefix="/api/v1")
 app.include_router(access.router, prefix="/api/v1")
 app.include_router(health.router, prefix="/api/v1")
 app.include_router(models.router, prefix="/api/v1")
+app.include_router(drive.router, prefix="/api/v1")
 
 
 @app.on_event("startup")

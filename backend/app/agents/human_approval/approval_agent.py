@@ -30,13 +30,17 @@ class HumanApprovalAgent:
         risk_score: float,
         justification: str = "",
         required_approvers: list[str] | None = None,
+        resource_identifier: str = "",
+        requester_email: str = "",
     ) -> dict[str, Any]:
         approval_id = str(uuid.uuid4())
         approval = {
             "approval_id": approval_id,
             "request_id": request_id,
             "requester_id": requester_id,
+            "requester_email": requester_email,
             "resource_type": resource_type,
+            "resource_identifier": resource_identifier,
             "access_type": access_type,
             "risk_level": risk_level.value,
             "risk_score": risk_score,

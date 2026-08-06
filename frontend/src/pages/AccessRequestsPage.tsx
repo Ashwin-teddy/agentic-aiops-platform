@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { Shield, Send, CheckCircle, AlertCircle } from 'lucide-react';
-import { accessAPI } from '../services/api';
+import { useState, useEffect } from 'react';
+import { Shield, Send, CheckCircle, AlertCircle, FolderOpen, Link2, PlugZap, Loader2 } from 'lucide-react';
+import { accessAPI, driveAPI } from '../services/api';
 
 export default function AccessRequestsPage() {
   const [resourceType, setResourceType] = useState('jira');
@@ -10,8 +10,57 @@ export default function AccessRequestsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
+  const [driveConnected, setDriveConnected] = useState(false);
+  const [driveEmail, setDriveEmail] = useState('');
+  const [driveLoading, setDriveLoading] = useState(true);
+  const [driveAuthUrl, setDriveAuthUrl] = useState('');
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const { data } = await driveAPI.getAuthUrl();
+        if (!mounted) return;
+        setDriveConnected(data.connected);
+        setDriveEmail(data.email || '');
+        setDriveAuthUrl(data.auth_url || '');
+      } catch {
+        if (!mounted) return;
+        setDriveConnected(false);
+      } finally {
+        if (mounted) setDriveLoading(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const isDrive = resourceType === 'google_drive';
+
+  const handleConnect = () => {
+    if (driveAuthUrl) window.location.href = driveAuthUrl;
+  };
+
+  const handleDisconnect = async () => {
+    setDriveLoading(true);
+    try {
+      await driveAPI.disconnect();
+      setDriveConnected(false);
+      setDriveEmail('');
+    } catch {
+      setResult({ type: 'error', message: 'Failed to disconnect Google Drive.' });
+    } finally {
+      setDriveLoading(false);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!resourceId || !justification) return;
+    if (isDrive && !driveConnected) {
+      setResult({ type: 'error', message: 'Connect Google Drive first so the approver can share the folder with you.' });
+      return;
+    }
     setSubmitting(true);
     try {
       const { data } = await accessAPI.createRequest({
@@ -52,6 +101,58 @@ export default function AccessRequestsPage() {
           Request access to enterprise tools and resources with AI-powered risk assessment.
         </p>
       </div>
+
+      {/* Google Drive connection */}
+      {isDrive && (
+        <div className="glass-card p-4 sm:p-6 mb-6 animate-slide-up">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                style={{ background: 'var(--gradient-1)' }}
+              >
+                <FolderOpen className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+                  Google Drive Connection
+                </p>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                  {driveLoading
+                    ? 'Checking connection...'
+                    : driveConnected
+                      ? `Connected as ${driveEmail}`
+                      : 'Connect your Google account so folders can be shared with you'}
+                </p>
+              </div>
+            </div>
+            {!driveLoading && driveConnected && (
+              <span
+                className="self-start sm:self-auto flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold"
+                style={{ background: 'rgba(0, 210, 106, 0.12)', border: '1px solid rgba(0, 210, 106, 0.25)', color: 'var(--success)' }}
+              >
+                <CheckCircle className="w-3.5 h-3.5" />
+                Connected
+              </span>
+            )}
+            {!driveLoading && (
+              <button
+                onClick={driveConnected ? handleDisconnect : handleConnect}
+                disabled={!driveAuthUrl && !driveConnected}
+                className="self-start sm:self-auto flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all duration-300 hover:scale-105"
+                style={
+                  driveConnected
+                    ? { background: 'rgba(255, 59, 59, 0.1)', color: 'var(--error)', border: '1px solid rgba(255, 59, 59, 0.25)' }
+                    : { background: 'var(--accent)', color: '#fff' }
+                }
+              >
+                {driveLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : driveConnected ? <PlugZap className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}
+                {driveConnected ? 'Disconnect' : 'Connect Google Drive'}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Form */}
       <div className="glass-card p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6">
@@ -102,7 +203,11 @@ export default function AccessRequestsPage() {
             type="text"
             value={resourceId}
             onChange={(e) => setResourceId(e.target.value)}
-            placeholder="e.g., PROJECT-123, my-repo, prod-cluster"
+            placeholder={
+              isDrive
+                ? 'Google Drive folder/file link or ID (e.g., https://drive.google.com/drive/folders/abc123)'
+                : 'e.g., PROJECT-123, my-repo, prod-cluster'
+            }
             className="input-field"
           />
         </div>

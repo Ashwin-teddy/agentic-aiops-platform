@@ -47,6 +47,10 @@ class Settings(BaseSettings):
     cohere_api_key: str = ""
     ollama_base_url: str = "http://localhost:11434"
 
+    google_oauth_client_id: str = ""
+    google_oauth_client_secret: str = ""
+    google_oauth_redirect_uri: str = ""
+
     default_chat_model: str = "llama3.2"
     default_embedding_model: str = "nomic-embed-text"
     default_intent_model: str = "llama3.2"
