@@ -39,7 +39,7 @@ export const authAPI = {
 };
 
 export const accessAPI = {
-  createRequest: (data: { resource_type: string; resource_identifier: string; access_type: string; justification: string }) =>
+  createRequest: (data: { resource_type: string; resource_identifier: string; access_type: string; justification: string; share_with_emails?: string }) =>
     api.post('/access/request', data),
   getPending: () => api.get('/access/pending'),
   approve: (approvalId: string, decision: string, comments: string) =>

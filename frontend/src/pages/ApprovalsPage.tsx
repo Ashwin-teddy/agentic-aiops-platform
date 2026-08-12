@@ -36,13 +36,20 @@ export default function ApprovalsPage() {
   const handleDecision = async (approvalId: string, decision: string) => {
     try {
       const { data } = await accessAPI.approve(approvalId, decision, '');
-      const share = data?.share_result;
-      if (share) {
-        setFeedback(
-          share.success
-            ? { type: 'success', message: share.message }
-            : { type: 'error', message: share.error }
-        );
+      const shares: Array<{ success: boolean; message?: string; error?: string }> = data?.share_results;
+      if (shares && shares.length > 0) {
+        const failed = shares.filter((s) => !s.success);
+        if (failed.length === 0) {
+          setFeedback({
+            type: 'success',
+            message: `Granted access to ${shares.length} recipient${shares.length > 1 ? 's' : ''}.`,
+          });
+        } else {
+          setFeedback({
+            type: 'error',
+            message: `Failed for ${failed.length} recipient${failed.length > 1 ? 's' : ''}: ${failed[0]?.error}`,
+          });
+        }
       }
     } catch {
       setFeedback({ type: 'error', message: 'Failed to record decision.' });
@@ -111,7 +118,8 @@ export default function ApprovalsPage() {
                     <p className="text-xs mb-3 flex items-center gap-1.5 font-mono" style={{ color: 'var(--text-muted)' }}>
                       <Share2 className="w-3.5 h-3.5" />
                       {a.resource_identifier}
-                      {a.requester_email ? ` → ${a.requester_email}` : ''}
+                      {' → '}
+                      {(a.share_with_emails?.length ? a.share_with_emails : a.requester_email ? [a.requester_email] : []).join(', ')}
                     </p>
                   )}
                   <div className="flex items-center gap-3">

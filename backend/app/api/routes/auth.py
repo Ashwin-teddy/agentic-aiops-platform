@@ -10,6 +10,7 @@ from app.api.dependencies.auth import CurrentUser, get_current_user
 from app.api.schemas.auth import LoginRequest, RegisterRequest, AzureADLoginRequest, TokenResponse, UserResponse
 from app.core.security.jwt import create_token_pair
 from app.core.security.oauth2 import AzureADProvider
+from app.core.security.rbac import RBACManager
 from app.db.session import get_session
 from app.db.models.user import UserModel
 from app.observability.logging import get_logger
@@ -34,7 +35,7 @@ async def login(request: LoginRequest) -> TokenResponse:
         tokens = create_token_pair(
             subject=str(user.id),
             roles=[user.role],
-            permissions=["read:own_data", "view:dashboard", "manage:access", "manage:approvals"],
+            permissions=RBACManager.get_permissions_for_roles([user.role]),
             extra_claims={"email": user.email, "display_name": user.display_name},
         )
         return TokenResponse(
@@ -63,7 +64,7 @@ async def register(request: RegisterRequest) -> TokenResponse:
         tokens = create_token_pair(
             subject=str(user.id),
             roles=[user.role],
-            permissions=["read:own_data", "view:dashboard", "manage:access", "manage:approvals"],
+            permissions=RBACManager.get_permissions_for_roles([user.role]),
             extra_claims={"email": user.email, "display_name": user.display_name},
         )
         return TokenResponse(

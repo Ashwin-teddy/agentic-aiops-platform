@@ -7,6 +7,7 @@ export default function AccessRequestsPage() {
   const [resourceId, setResourceId] = useState('');
   const [accessType, setAccessType] = useState('read');
   const [justification, setJustification] = useState('');
+  const [shareWith, setShareWith] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -68,6 +69,7 @@ export default function AccessRequestsPage() {
         resource_identifier: resourceId,
         access_type: accessType,
         justification,
+        share_with_emails: isDrive ? shareWith : '',
       });
       setResult({ type: 'success', message: `Request ${data.request_id} — ${data.status} (Risk: ${data.risk_level})` });
     } catch {
@@ -122,7 +124,7 @@ export default function AccessRequestsPage() {
                     ? 'Checking connection...'
                     : driveConnected
                       ? `Connected as ${driveEmail}`
-                      : 'Connect your Google account so folders can be shared with you'}
+                      : 'Connect the Google account that owns the folder (access is granted from this account)'}
                 </p>
               </div>
             </div>
@@ -211,6 +213,22 @@ export default function AccessRequestsPage() {
             className="input-field"
           />
         </div>
+
+        {/* Share with (Drive only) */}
+        {isDrive && (
+          <div>
+            <label className="block text-xs font-bold tracking-wider uppercase mb-2" style={{ color: 'var(--text-muted)' }}>
+              Share Access With
+            </label>
+            <input
+              type="text"
+              value={shareWith}
+              onChange={(e) => setShareWith(e.target.value)}
+              placeholder="Comma-separated emails, e.g. alice@example.com, bob@example.com"
+              className="input-field"
+            />
+          </div>
+        )}
 
         {/* Justification */}
         <div>

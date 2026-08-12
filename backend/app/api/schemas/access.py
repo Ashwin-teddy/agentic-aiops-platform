@@ -12,6 +12,10 @@ class AccessRequestCreate(BaseModel):
     access_type: str = Field(..., description="Access level: read, write, admin")
     justification: str = Field("", description="Business justification")
     duration_hours: int = Field(8, description="Requested access duration in hours")
+    share_with_emails: str = Field(
+        "",
+        description="Comma-separated list of emails to grant access to (Google Drive)",
+    )
 
 
 class AccessRequestResponse(BaseModel):

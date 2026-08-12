@@ -188,7 +188,10 @@ class GoogleDriveService:
         if not file_id:
             return {"success": False, "error": "Could not determine a Google Drive file or folder ID"}
         role = ROLE_MAP.get(access_type, "reader")
-        access_token = await self._get_access_token(user_id)
+        try:
+            access_token = await self._get_access_token(user_id)
+        except ValueError as e:
+            return {"success": False, "error": str(e)}
         headers = {"Authorization": f"Bearer {access_token}"}
         body = {"role": role, "type": "user", "emailAddress": email}
         url = GOOGLE_DRIVE_PERMISSIONS_URL.format(file_id=file_id)

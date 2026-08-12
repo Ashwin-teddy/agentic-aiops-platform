@@ -41,6 +41,7 @@ export interface Approval {
   request_id: string;
   requester_id: string;
   requester_email?: string;
+  share_with_emails?: string[];
   resource_type: string;
   resource_identifier?: string;
   access_type: string;

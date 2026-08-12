@@ -32,6 +32,7 @@ class HumanApprovalAgent:
         required_approvers: list[str] | None = None,
         resource_identifier: str = "",
         requester_email: str = "",
+        share_with_emails: list[str] | None = None,
     ) -> dict[str, Any]:
         approval_id = str(uuid.uuid4())
         approval = {
@@ -39,6 +40,7 @@ class HumanApprovalAgent:
             "request_id": request_id,
             "requester_id": requester_id,
             "requester_email": requester_email,
+            "share_with_emails": share_with_emails or [],
             "resource_type": resource_type,
             "resource_identifier": resource_identifier,
             "access_type": access_type,
@@ -81,12 +83,12 @@ class HumanApprovalAgent:
             aid: data for aid, data in approval["approvals_received"].items()
             if data["decision"] == "approved"
         }
-        if required and required.issubset(set(received_approvals.keys())):
-            approval["status"] = ApprovalStatus.APPROVED.value
-            approval["approved_at"] = datetime.now(timezone.utc).isoformat()
-        elif any(data["decision"] == "rejected" for data in approval["approvals_received"].values()):
+        if any(data["decision"] == "rejected" for data in approval["approvals_received"].values()):
             approval["status"] = ApprovalStatus.REJECTED.value
             approval["rejected_at"] = datetime.now(timezone.utc).isoformat()
+        elif not required or required.issubset(set(received_approvals.keys())):
+            approval["status"] = ApprovalStatus.APPROVED.value
+            approval["approved_at"] = datetime.now(timezone.utc).isoformat()
         logger.info(
             "approval_decision",
             approval_id=approval_id,

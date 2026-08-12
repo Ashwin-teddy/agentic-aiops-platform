@@ -10,6 +10,7 @@ from app.agents.human_approval.approval_agent import HumanApprovalAgent
 from app.domain.enums.risk import RiskLevel
 from app.integrations.google_drive import drive_service
 from app.observability.logging import get_logger
+from app.core.security.rbac import Permission
 
 router = APIRouter(prefix="/access", tags=["Access Management"])
 logger = get_logger(__name__)
@@ -40,7 +41,11 @@ async def create_access_request(
         justification=request.justification,
         auto_execute=not needs_approval,
     )
+    result["risk_score"] = risk_eval["risk_score"]
     if needs_approval:
+        share_with_emails = [
+            email.strip() for email in request.share_with_emails.split(",") if email.strip()
+        ]
         approval = await approval_agent.create_approval_request(
             request_id=result["request_id"],
             requester_id=current_user.user_id,
@@ -51,6 +56,7 @@ async def create_access_request(
             risk_level=risk_level,
             risk_score=risk_eval["risk_score"],
             justification=request.justification,
+            share_with_emails=share_with_emails,
         )
         result["approval_id"] = approval["approval_id"]
         result["message"] = "Access request submitted for approval"
@@ -72,7 +78,7 @@ async def approve_request(
     comments: str = "",
     current_user: CurrentUser = Depends(get_current_user),
 ) -> dict:
-    current_user.require_permission(ApprovalPermission)
+    current_user.require_permission(Permission.APPROVE_ACCESS)
     result = await approval_agent.submit_approval(
         approval_id=approval_id,
         approver_id=current_user.user_id,
@@ -83,14 +89,19 @@ async def approve_request(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=result["error"])
     approval = result["approval"]
     if approval.get("status") == "approved" and approval.get("resource_type") == "google_drive":
-        share_result = await drive_service.share_with_user(
-            user_id=current_user.user_id,
-            resource_identifier=approval.get("resource_identifier", ""),
-            email=approval.get("requester_email", ""),
-            access_type=approval.get("access_type", "read"),
-        )
-        result["share_result"] = share_result
+        recipients = approval.get("share_with_emails") or [
+            email for email in [approval.get("requester_email", "")] if email
+        ]
+        if not recipients:
+            recipients = [current_user.email]
+        share_results = []
+        for email in recipients:
+            share_result = await drive_service.share_with_user(
+                user_id=current_user.user_id,
+                resource_identifier=approval.get("resource_identifier", ""),
+                email=email,
+                access_type=approval.get("access_type", "read"),
+            )
+            share_results.append(share_result)
+        result["share_results"] = share_results
     return result
-
-
-from app.core.security.rbac import Permission as ApprovalPermission
