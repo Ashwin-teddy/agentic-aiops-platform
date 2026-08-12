@@ -28,29 +28,39 @@ const resourceLabels: Record<string, string> = {
 
 export default function ApprovalsPage() {
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
   const { data: approvals, refetch } = useQuery({
     queryKey: ['approvals'],
     queryFn: () => accessAPI.getPending().then((r) => r.data),
   });
 
+  const pendingList = ((approvals as Approval[] | undefined) ?? []).filter((a) => !removedIds.has(a.approval_id));
+
   const handleDecision = async (approvalId: string, decision: string) => {
     try {
       const { data } = await accessAPI.approve(approvalId, decision, '');
       const shares: Array<{ success: boolean; message?: string; error?: string }> = data?.share_results;
-      if (shares && shares.length > 0) {
-        const failed = shares.filter((s) => !s.success);
-        if (failed.length === 0) {
-          setFeedback({
-            type: 'success',
-            message: `Granted access to ${shares.length} recipient${shares.length > 1 ? 's' : ''}.`,
-          });
+      if (decision === 'approved') {
+        if (shares && shares.length > 0) {
+          const failed = shares.filter((s) => !s.success);
+          if (failed.length === 0) {
+            setFeedback({
+              type: 'success',
+              message: `Approved — granted access to ${shares.length} recipient${shares.length > 1 ? 's' : ''}.`,
+            });
+          } else {
+            setFeedback({
+              type: 'error',
+              message: `Approved, but failed for ${failed.length} recipient${failed.length > 1 ? 's' : ''}: ${failed[0]?.error}`,
+            });
+          }
         } else {
-          setFeedback({
-            type: 'error',
-            message: `Failed for ${failed.length} recipient${failed.length > 1 ? 's' : ''}: ${failed[0]?.error}`,
-          });
+          setFeedback({ type: 'success', message: 'Approved' });
         }
+      } else {
+        setFeedback({ type: 'success', message: 'Rejected' });
       }
+      setRemovedIds((prev) => new Set(prev).add(approvalId));
     } catch (err) {
       const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
       setFeedback({ type: 'error', message: detail || 'Failed to record decision.' });
@@ -79,14 +89,14 @@ export default function ApprovalsPage() {
         >
           <Clock className="w-3.5 h-3.5" style={{ color: 'var(--warning)' }} />
           <span className="text-xs font-bold" style={{ color: 'var(--warning)' }}>
-            {approvals?.length || 0} Pending
+            {pendingList.length} Pending
           </span>
         </div>
       </div>
 
       {/* Approvals List */}
       <div className="space-y-4">
-        {(approvals as Approval[] | undefined)?.map((a, i) => {
+        {pendingList.map((a, i) => {
           const rc = riskColor(a.risk_level);
           return (
             <div
@@ -167,7 +177,7 @@ export default function ApprovalsPage() {
           );
         })}
 
-        {(!approvals || approvals.length === 0) && (
+        {pendingList.length === 0 && (
           <div className="glass-card flex flex-col items-center justify-center py-20">
             <div
               className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
