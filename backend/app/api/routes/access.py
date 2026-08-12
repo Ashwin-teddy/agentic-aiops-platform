@@ -10,7 +10,6 @@ from app.agents.human_approval.approval_agent import HumanApprovalAgent
 from app.domain.enums.risk import RiskLevel
 from app.integrations.google_drive import drive_service
 from app.observability.logging import get_logger
-from app.core.security.rbac import Permission
 
 router = APIRouter(prefix="/access", tags=["Access Management"])
 logger = get_logger(__name__)
@@ -78,7 +77,6 @@ async def approve_request(
     comments: str = "",
     current_user: CurrentUser = Depends(get_current_user),
 ) -> dict:
-    current_user.require_permission(Permission.APPROVE_ACCESS)
     result = await approval_agent.submit_approval(
         approval_id=approval_id,
         approver_id=current_user.user_id,
