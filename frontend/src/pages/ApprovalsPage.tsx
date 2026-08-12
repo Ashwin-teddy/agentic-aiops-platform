@@ -51,8 +51,9 @@ export default function ApprovalsPage() {
           });
         }
       }
-    } catch {
-      setFeedback({ type: 'error', message: 'Failed to record decision.' });
+    } catch (err) {
+      const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      setFeedback({ type: 'error', message: detail || 'Failed to record decision.' });
     }
     refetch();
   };

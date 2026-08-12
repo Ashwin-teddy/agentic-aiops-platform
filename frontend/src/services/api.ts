@@ -43,7 +43,9 @@ export const accessAPI = {
     api.post('/access/request', data),
   getPending: () => api.get('/access/pending'),
   approve: (approvalId: string, decision: string, comments: string) =>
-    api.post(`/access/approve/${approvalId}`, { decision, comments }),
+    api.post(
+      `/access/approve/${approvalId}?decision=${encodeURIComponent(decision)}&comments=${encodeURIComponent(comments)}`
+    ),
 };
 
 export const driveAPI = {
