@@ -1,13 +1,14 @@
 from __future__ import annotations
 
+import time
+
 from fastapi import APIRouter, Depends, HTTPException, status
 
+from app.agents.workflow.aiops_workflow import get_aiops_workflow
 from app.api.dependencies.auth import CurrentUser, get_current_user
 from app.api.schemas.chat import ChatRequest, ChatResponse
-from app.agents.workflow.aiops_workflow import get_aiops_workflow
 from app.observability.logging import get_logger
-from app.observability.metrics import REQUEST_COUNT, REQUEST_LATENCY, AGENT_EXECUTIONS
-import time
+from app.observability.metrics import AGENT_EXECUTIONS, REQUEST_COUNT, REQUEST_LATENCY
 
 router = APIRouter(prefix="/chat", tags=["Chat"])
 logger = get_logger(__name__)
@@ -50,6 +51,7 @@ async def get_session_history(
     current_user: CurrentUser = Depends(get_current_user),
 ) -> dict:
     from app.agents.workflow.aiops_workflow import get_aiops_workflow
+
     workflow = get_aiops_workflow()
     context = await workflow.memory_manager.get_session_context(session_id)
     history = await workflow.memory_manager.get_user_history(current_user.user_id)

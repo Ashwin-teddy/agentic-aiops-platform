@@ -27,8 +27,11 @@ class GitHubTool(BaseTool):
     async def _request(self, method: str, path: str, **kwargs: Any) -> dict[str, Any]:
         async with httpx.AsyncClient() as client:
             resp = await client.request(
-                method, f"{self.base_url}{path}",
-                headers=self.headers, timeout=self.timeout_seconds, **kwargs,
+                method,
+                f"{self.base_url}{path}",
+                headers=self.headers,
+                timeout=self.timeout_seconds,
+                **kwargs,
             )
             resp.raise_for_status()
             if resp.status_code == 204:
@@ -42,27 +45,33 @@ class GitHubTool(BaseTool):
             repo = kwargs["repo"]
             data = await self._request("GET", f"/repos/{org}/{repo}")
             return ToolResult(success=True, data=data)
-        elif action == "list_prs":
+        if action == "list_prs":
             repo = kwargs["repo"]
             state = kwargs.get("state", "open")
-            data = await self._request("GET", f"/repos/{org}/{repo}/pulls", params={"state": state, "per_page": 10})
+            data = await self._request(
+                "GET", f"/repos/{org}/{repo}/pulls", params={"state": state, "per_page": 10}
+            )
             return ToolResult(success=True, data=data)
-        elif action == "get_pr":
+        if action == "get_pr":
             repo = kwargs["repo"]
             pr_number = kwargs["pr_number"]
             data = await self._request("GET", f"/repos/{org}/{repo}/pulls/{pr_number}")
             return ToolResult(success=True, data=data)
-        elif action == "list_issues":
+        if action == "list_issues":
             repo = kwargs["repo"]
-            data = await self._request("GET", f"/repos/{org}/{repo}/issues", params={"per_page": 10})
+            data = await self._request(
+                "GET", f"/repos/{org}/{repo}/issues", params={"per_page": 10}
+            )
             return ToolResult(success=True, data=data)
-        elif action == "search_code":
+        if action == "search_code":
             query = kwargs.get("query", "")
             data = await self._request("GET", "/search/code", params={"q": f"{query} org:{org}"})
             return ToolResult(success=True, data=data.get("items", []))
-        elif action == "get_workflow_runs":
+        if action == "get_workflow_runs":
             repo = kwargs["repo"]
-            data = await self._request("GET", f"/repos/{org}/{repo}/actions/runs", params={"per_page": 10})
+            data = await self._request(
+                "GET", f"/repos/{org}/{repo}/actions/runs", params={"per_page": 10}
+            )
             return ToolResult(success=True, data=data.get("workflow_runs", []))
         return ToolResult(success=False, error=f"Unknown action: {action}")
 

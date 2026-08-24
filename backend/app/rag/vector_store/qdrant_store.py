@@ -71,7 +71,9 @@ class QdrantVectorStore:
     ) -> list[dict[str, Any]]:
         query_filter = None
         if source_filter:
-            query_filter = Filter(must=[FieldCondition(key="source", match=MatchValue(value=source_filter))])
+            query_filter = Filter(
+                must=[FieldCondition(key="source", match=MatchValue(value=source_filter))]
+            )
         results = self.client.query_points(
             collection_name=self.collection,
             query=query_embedding,

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.tools.base.tool_registry import get_tool_registry
 from app.observability.logging import get_logger
+from app.tools.base.tool_registry import get_tool_registry
 
 logger = get_logger(__name__)
 
@@ -52,7 +52,9 @@ class NotificationAgent:
         results = {}
         slack = self.tool_registry.get("slack")
         if slack:
-            result = await slack.safe_execute(action="send_message", channel="#access-approvals", text=message)
+            result = await slack.safe_execute(
+                action="send_message", channel="#access-approvals", text=message
+            )
             results["slack"] = result.success
         email_tool = self.tool_registry.get("email")
         if email_tool:
@@ -90,18 +92,19 @@ class NotificationAgent:
         slack = self.tool_registry.get("slack")
         if not slack:
             return False
-        result = await slack.safe_execute(action="send_dm", user_id=user_id, text=f"*{title}*\n{message}" if title else message)
+        result = await slack.safe_execute(
+            action="send_dm", user_id=user_id, text=f"*{title}*\n{message}" if title else message
+        )
         return result.success
 
     async def _send_teams(self, user_id: str, message: str, title: str) -> bool:
-        teams = self.tool_registry.get("microsoft_teams")
-        if not teams:
-            return False
-        return True
+        return self.tool_registry.get("microsoft_teams")
 
     async def _send_email(self, user_id: str, message: str, title: str) -> bool:
         email = self.tool_registry.get("email")
         if not email:
             return False
-        result = await email.safe_execute(action="send_email", to=[user_id], subject=title or "AIOPS Notification", body=message)
+        result = await email.safe_execute(
+            action="send_email", to=[user_id], subject=title or "AIOPS Notification", body=message
+        )
         return result.success

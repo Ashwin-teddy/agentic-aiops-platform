@@ -23,7 +23,8 @@ class OktaTool(BaseTool):
     async def _request(self, method: str, path: str, **kwargs: Any) -> dict[str, Any]:
         async with httpx.AsyncClient() as client:
             resp = await client.request(
-                method, f"{self.base_url}{path}",
+                method,
+                f"{self.base_url}{path}",
                 headers=self.headers,
                 timeout=self.timeout_seconds,
                 **kwargs,
@@ -37,16 +38,16 @@ class OktaTool(BaseTool):
             user_id = kwargs["user_id"]
             data = await self._request("GET", f"/users/{user_id}")
             return ToolResult(success=True, data=data)
-        elif action == "activate_user":
+        if action == "activate_user":
             user_id = kwargs["user_id"]
             data = await self._request("POST", f"/users/{user_id}/lifecycle/activate")
             return ToolResult(success=True, data=data)
-        elif action == "assign_app":
+        if action == "assign_app":
             user_id = kwargs["user_id"]
             app_id = kwargs["app_id"]
             data = await self._request("POST", f"/apps/{app_id}/users", json={"id": user_id})
             return ToolResult(success=True, data=data)
-        elif action == "list_groups":
+        if action == "list_groups":
             user_id = kwargs["user_id"]
             data = await self._request("GET", f"/users/{user_id}/groups")
             return ToolResult(success=True, data=data)

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.core.config.settings import settings
 from app.observability.logging import get_logger
 
 logger = get_logger(__name__)
@@ -31,13 +30,15 @@ class DocumentChunker:
                 if split_point > self.chunk_size // 2:
                     end = start + split_point + 1
                     chunk_text = text[start:end]
-            chunks.append({
-                "content": chunk_text.strip(),
-                "chunk_index": chunk_index,
-                "start_char": start,
-                "end_char": end,
-                "metadata": metadata or {},
-            })
+            chunks.append(
+                {
+                    "content": chunk_text.strip(),
+                    "chunk_index": chunk_index,
+                    "start_char": start,
+                    "end_char": end,
+                    "metadata": metadata or {},
+                }
+            )
             chunk_index += 1
             start = end - self.chunk_overlap
         return chunks
@@ -47,7 +48,11 @@ class DocumentChunker:
         for doc in documents:
             chunks = self.chunk_text(
                 doc["content"],
-                metadata={**doc.get("metadata", {}), "title": doc.get("title", ""), "source": doc.get("source", "")},
+                metadata={
+                    **doc.get("metadata", {}),
+                    "title": doc.get("title", ""),
+                    "source": doc.get("source", ""),
+                },
             )
             for chunk in chunks:
                 chunk["title"] = doc.get("title", "")

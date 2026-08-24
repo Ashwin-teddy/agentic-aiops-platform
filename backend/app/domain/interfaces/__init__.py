@@ -1,16 +1,21 @@
 from app.domain.interfaces.repository import (
-    BaseRepository,
-    UserRepository,
-    WorkflowRepository,
     AccessRequestRepository,
-    IncidentRepository,
     ApprovalRepository,
     AuditLogRepository,
+    BaseRepository,
+    IncidentRepository,
     KnowledgeRepository,
+    UserRepository,
+    WorkflowRepository,
 )
 
 __all__ = [
-    "BaseRepository", "UserRepository", "WorkflowRepository",
-    "AccessRequestRepository", "IncidentRepository", "ApprovalRepository",
-    "AuditLogRepository", "KnowledgeRepository",
+    "BaseRepository",
+    "UserRepository",
+    "WorkflowRepository",
+    "AccessRequestRepository",
+    "IncidentRepository",
+    "ApprovalRepository",
+    "AuditLogRepository",
+    "KnowledgeRepository",
 ]

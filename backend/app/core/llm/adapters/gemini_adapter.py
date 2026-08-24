@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-import json
-from typing import Any, AsyncGenerator
+from typing import TYPE_CHECKING, Any
 
 from google import genai
 from google.genai import types as gemini_types
@@ -16,6 +15,9 @@ from app.core.llm.types import (
     ModelProvider,
 )
 from app.observability.logging import get_logger
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 logger = get_logger(__name__)
 
@@ -41,12 +43,16 @@ class GeminiAdapter(BaseLLMAdapter):
                 system_instruction = m.content
             else:
                 role = "user" if m.role == "user" else "model"
-                contents.append(gemini_types.Content(
-                    role=role,
-                    parts=[gemini_types.Part.from_text(text=m.content)],
-                ))
+                contents.append(
+                    gemini_types.Content(
+                        role=role,
+                        parts=[gemini_types.Part.from_text(text=m.content)],
+                    )
+                )
         if not contents:
-            contents = [gemini_types.Content(role="user", parts=[gemini_types.Part.from_text(text="Hello")])]
+            contents = [
+                gemini_types.Content(role="user", parts=[gemini_types.Part.from_text(text="Hello")])
+            ]
         config = gemini_types.GenerateContentConfig(
             temperature=temperature,
             max_output_tokens=max_tokens or self.config.max_tokens,
@@ -73,7 +79,9 @@ class GeminiAdapter(BaseLLMAdapter):
             model=self.model_id,
             provider=ModelProvider.GOOGLE,
             usage=usage,
-            finish_reason=getattr(response.candidates[0], "finish_reason", "") if response.candidates else "",
+            finish_reason=getattr(response.candidates[0], "finish_reason", "")
+            if response.candidates
+            else "",
         )
 
     async def chat_stream(
@@ -90,10 +98,12 @@ class GeminiAdapter(BaseLLMAdapter):
                 system_instruction = m.content
             else:
                 role = "user" if m.role == "user" else "model"
-                contents.append(gemini_types.Content(
-                    role=role,
-                    parts=[gemini_types.Part.from_text(text=m.content)],
-                ))
+                contents.append(
+                    gemini_types.Content(
+                        role=role,
+                        parts=[gemini_types.Part.from_text(text=m.content)],
+                    )
+                )
         config = gemini_types.GenerateContentConfig(
             temperature=temperature,
             max_output_tokens=max_tokens or self.config.max_tokens,
@@ -101,7 +111,9 @@ class GeminiAdapter(BaseLLMAdapter):
         if system_instruction:
             config.system_instruction = system_instruction
         for chunk in self.client.models.generate_content_stream(
-            model=self.model_id, contents=contents, config=config,
+            model=self.model_id,
+            contents=contents,
+            config=config,
         ):
             if chunk.text:
                 yield chunk.text
@@ -110,7 +122,11 @@ class GeminiAdapter(BaseLLMAdapter):
         try:
             self.client.models.generate_content(
                 model=self.model_id,
-                contents=[gemini_types.Content(role="user", parts=[gemini_types.Part.from_text(text="ping")])],
+                contents=[
+                    gemini_types.Content(
+                        role="user", parts=[gemini_types.Part.from_text(text="ping")]
+                    )
+                ],
                 config=gemini_types.GenerateContentConfig(max_output_tokens=10),
             )
             return True

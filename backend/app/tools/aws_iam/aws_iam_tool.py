@@ -33,31 +33,44 @@ class AWSIAMTool(BaseTool):
             if action == "list_users":
                 client = self._get_client()
                 data = client.list_users()
-                users = [{"UserName": u["UserName"], "Arn": u["Arn"], "CreateDate": str(u["CreateDate"])} for u in data.get("Users", [])]
+                users = [
+                    {"UserName": u["UserName"], "Arn": u["Arn"], "CreateDate": str(u["CreateDate"])}
+                    for u in data.get("Users", [])
+                ]
                 return ToolResult(success=True, data={"users": users})
-            elif action == "get_user":
+            if action == "get_user":
                 client = self._get_client()
                 username = kwargs["username"]
                 data = client.get_user(UserName=username)
                 return ToolResult(success=True, data=data.get("User", {}))
-            elif action == "list_roles":
+            if action == "list_roles":
                 client = self._get_client()
                 data = client.list_roles()
-                roles = [{"RoleName": r["RoleName"], "Arn": r["Arn"]} for r in data.get("Roles", [])]
+                roles = [
+                    {"RoleName": r["RoleName"], "Arn": r["Arn"]} for r in data.get("Roles", [])
+                ]
                 return ToolResult(success=True, data={"roles": roles})
-            elif action == "attach_policy":
+            if action == "attach_policy":
                 client = self._get_client()
                 client.attach_user_policy(
                     UserName=kwargs["username"],
                     PolicyArn=kwargs["policy_arn"],
                 )
-                return ToolResult(success=True, data={"message": f"Policy attached to {kwargs['username']}"})
-            elif action == "create_access_key":
+                return ToolResult(
+                    success=True, data={"message": f"Policy attached to {kwargs['username']}"}
+                )
+            if action == "create_access_key":
                 client = self._get_client()
                 data = client.create_access_key(UserName=kwargs["username"])
                 ak = data["AccessKey"]
-                return ToolResult(success=True, data={"AccessKeyId": ak["AccessKeyId"], "SecretAccessKey": ak["SecretAccessKey"]})
-            elif action == "list_policies":
+                return ToolResult(
+                    success=True,
+                    data={
+                        "AccessKeyId": ak["AccessKeyId"],
+                        "SecretAccessKey": ak["SecretAccessKey"],
+                    },
+                )
+            if action == "list_policies":
                 client = self._get_client()
                 data = client.list_policies(Scope="Local")
                 return ToolResult(success=True, data={"policies": data.get("Policies", [])})

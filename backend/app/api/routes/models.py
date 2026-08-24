@@ -4,8 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
 from app.api.dependencies.auth import CurrentUser, get_current_user
-from app.core.llm.router import get_model_router
 from app.core.llm.embeddings.embedding_router import get_embedding_router
+from app.core.llm.router import get_model_router
 from app.core.llm.types import TaskType
 from app.observability.logging import get_logger
 

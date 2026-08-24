@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING
 
 from app.core.llm.embeddings.embedding_router import get_embedding_router
-from app.core.llm.types import EmbeddingResult
 from app.observability.logging import get_logger
+
+if TYPE_CHECKING:
+    from app.core.llm.types import EmbeddingResult
 
 logger = get_logger(__name__)
 
@@ -20,7 +22,7 @@ class EmbeddingService:
     async def embed_batch(self, texts: list[str], batch_size: int = 100) -> list[list[float]]:
         all_embeddings: list[list[float]] = []
         for i in range(0, len(texts), batch_size):
-            batch = texts[i:i + batch_size]
+            batch = texts[i : i + batch_size]
             result = await self.router.embed(batch, model_key=self.model)
             all_embeddings.extend(result.embeddings)
             logger.info("embeddings_batch", batch_start=i, batch_size=len(batch))

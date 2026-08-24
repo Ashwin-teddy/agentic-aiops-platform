@@ -24,9 +24,12 @@ class JiraTool(BaseTool):
     async def _request(self, method: str, path: str, **kwargs: Any) -> dict[str, Any]:
         async with httpx.AsyncClient() as client:
             resp = await client.request(
-                method, f"{self.base_url}{path}",
-                auth=self.auth, headers=self.headers,
-                timeout=self.timeout_seconds, **kwargs,
+                method,
+                f"{self.base_url}{path}",
+                auth=self.auth,
+                headers=self.headers,
+                timeout=self.timeout_seconds,
+                **kwargs,
             )
             resp.raise_for_status()
             return resp.json()
@@ -37,26 +40,32 @@ class JiraTool(BaseTool):
             issue_key = kwargs["issue_key"]
             data = await self._request("GET", f"/issue/{issue_key}")
             return ToolResult(success=True, data=data)
-        elif action == "create_issue":
-            data = await self._request("POST", "/issue", json={
-                "fields": {
-                    "project": {"key": kwargs.get("project_key", "OPS")},
-                    "summary": kwargs.get("summary", ""),
-                    "description": kwargs.get("description", ""),
-                    "issuetype": {"name": kwargs.get("issue_type", "Task")},
-                }
-            })
+        if action == "create_issue":
+            data = await self._request(
+                "POST",
+                "/issue",
+                json={
+                    "fields": {
+                        "project": {"key": kwargs.get("project_key", "OPS")},
+                        "summary": kwargs.get("summary", ""),
+                        "description": kwargs.get("description", ""),
+                        "issuetype": {"name": kwargs.get("issue_type", "Task")},
+                    }
+                },
+            )
             return ToolResult(success=True, data=data)
-        elif action == "search":
+        if action == "search":
             jql = kwargs.get("jql", "")
             data = await self._request("GET", "/search", params={"jql": jql, "maxResults": 10})
             return ToolResult(success=True, data=data.get("issues", []))
-        elif action == "add_comment":
+        if action == "add_comment":
             issue_key = kwargs["issue_key"]
             comment = kwargs["comment"]
-            data = await self._request("POST", f"/issue/{issue_key}/comment", json={"body": comment})
+            data = await self._request(
+                "POST", f"/issue/{issue_key}/comment", json={"body": comment}
+            )
             return ToolResult(success=True, data=data)
-        elif action == "assign_issue":
+        if action == "assign_issue":
             issue_key = kwargs["issue_key"]
             assignee = kwargs.get("assignee", "")
             await self._request("PUT", f"/issue/{issue_key}/assignee", json={"accountId": assignee})

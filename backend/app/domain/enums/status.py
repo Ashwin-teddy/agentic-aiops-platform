@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class TaskStatus(str, Enum):
+class TaskStatus(StrEnum):
     PENDING = "pending"
     IN_PROGRESS = "in_progress"
     WAITING_APPROVAL = "waiting_approval"
@@ -13,7 +13,7 @@ class TaskStatus(str, Enum):
     TIMED_OUT = "timed_out"
 
 
-class ApprovalStatus(str, Enum):
+class ApprovalStatus(StrEnum):
     PENDING = "pending"
     APPROVED = "approved"
     REJECTED = "rejected"
@@ -21,7 +21,7 @@ class ApprovalStatus(str, Enum):
     CANCELLED = "cancelled"
 
 
-class IncidentSeverity(str, Enum):
+class IncidentSeverity(StrEnum):
     P1_CRITICAL = "P1"
     P2_HIGH = "P2"
     P3_MEDIUM = "P3"

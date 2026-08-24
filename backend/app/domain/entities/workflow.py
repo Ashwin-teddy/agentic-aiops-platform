@@ -6,8 +6,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from app.domain.enums.workflow import WorkflowType, WorkflowState
 from app.domain.enums.risk import RiskLevel
+from app.domain.enums.workflow import WorkflowState, WorkflowType
 
 
 class Workflow(BaseModel):

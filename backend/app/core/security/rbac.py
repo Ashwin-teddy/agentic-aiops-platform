@@ -1,13 +1,16 @@
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 from functools import wraps
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any
 
 from fastapi import HTTPException, status
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-class Permission(str, Enum):
+
+class Permission(StrEnum):
     READ_OWN_DATA = "read:own_data"
     WRITE_OWN_DATA = "write:own_data"
     READ_ALL_DATA = "read:all_data"
@@ -24,7 +27,7 @@ class Permission(str, Enum):
     MANAGE_SYSTEM = "manage:system"
 
 
-class Role(str, Enum):
+class Role(StrEnum):
     VIEWER = "viewer"
     USER = "user"
     OPERATOR = "operator"
@@ -38,36 +41,53 @@ class Role(str, Enum):
 ROLE_PERMISSIONS: dict[Role, list[Permission]] = {
     Role.VIEWER: [Permission.READ_OWN_DATA, Permission.VIEW_DASHBOARD],
     Role.USER: [
-        Permission.READ_OWN_DATA, Permission.WRITE_OWN_DATA,
-        Permission.EXECUTE_TROUBLESHOOT, Permission.VIEW_DASHBOARD,
+        Permission.READ_OWN_DATA,
+        Permission.WRITE_OWN_DATA,
+        Permission.EXECUTE_TROUBLESHOOT,
+        Permission.VIEW_DASHBOARD,
     ],
     Role.OPERATOR: [
-        Permission.READ_OWN_DATA, Permission.WRITE_OWN_DATA,
-        Permission.READ_ALL_DATA, Permission.EXECUTE_TROUBLESHOOT,
-        Permission.VIEW_DASHBOARD, Permission.MANAGE_WORKFLOWS,
+        Permission.READ_OWN_DATA,
+        Permission.WRITE_OWN_DATA,
+        Permission.READ_ALL_DATA,
+        Permission.EXECUTE_TROUBLESHOOT,
+        Permission.VIEW_DASHBOARD,
+        Permission.MANAGE_WORKFLOWS,
     ],
     Role.ENGINEER: [
-        Permission.READ_OWN_DATA, Permission.WRITE_OWN_DATA,
-        Permission.READ_ALL_DATA, Permission.EXECUTE_TROUBLESHOOT,
-        Permission.VIEW_DASHBOARD, Permission.MANAGE_WORKFLOWS,
+        Permission.READ_OWN_DATA,
+        Permission.WRITE_OWN_DATA,
+        Permission.READ_ALL_DATA,
+        Permission.EXECUTE_TROUBLESHOOT,
+        Permission.VIEW_DASHBOARD,
+        Permission.MANAGE_WORKFLOWS,
         Permission.MANAGE_KNOWLEDGE,
     ],
     Role.MANAGER: [
-        Permission.READ_OWN_DATA, Permission.WRITE_OWN_DATA,
-        Permission.READ_ALL_DATA, Permission.EXECUTE_TROUBLESHOOT,
-        Permission.VIEW_DASHBOARD, Permission.MANAGE_WORKFLOWS,
-        Permission.MANAGE_KNOWLEDGE, Permission.APPROVE_ACCESS,
+        Permission.READ_OWN_DATA,
+        Permission.WRITE_OWN_DATA,
+        Permission.READ_ALL_DATA,
+        Permission.EXECUTE_TROUBLESHOOT,
+        Permission.VIEW_DASHBOARD,
+        Permission.MANAGE_WORKFLOWS,
+        Permission.MANAGE_KNOWLEDGE,
+        Permission.APPROVE_ACCESS,
     ],
     Role.SECURITY_ADMIN: [
-        Permission.READ_OWN_DATA, Permission.WRITE_OWN_DATA,
-        Permission.READ_ALL_DATA, Permission.EXECUTE_TROUBLESHOOT,
-        Permission.VIEW_DASHBOARD, Permission.MANAGE_WORKFLOWS,
-        Permission.MANAGE_KNOWLEDGE, Permission.APPROVE_ACCESS,
-        Permission.VIEW_AUDIT_LOGS, Permission.MANAGE_POLICIES,
+        Permission.READ_OWN_DATA,
+        Permission.WRITE_OWN_DATA,
+        Permission.READ_ALL_DATA,
+        Permission.EXECUTE_TROUBLESHOOT,
+        Permission.VIEW_DASHBOARD,
+        Permission.MANAGE_WORKFLOWS,
+        Permission.MANAGE_KNOWLEDGE,
+        Permission.APPROVE_ACCESS,
+        Permission.VIEW_AUDIT_LOGS,
+        Permission.MANAGE_POLICIES,
         Permission.APPROVE_HIGH_RISK,
     ],
-    Role.ADMIN: [p for p in Permission],
-    Role.SUPER_ADMIN: [p for p in Permission],
+    Role.ADMIN: list(Permission),
+    Role.SUPER_ADMIN: list(Permission),
 }
 
 
@@ -115,5 +135,7 @@ def require_permission(permission: Permission) -> Callable:
             user_perms = getattr(current_user, "permissions", [])
             RBACManager.check_permission(user_perms, permission)
             return await func(*args, **kwargs)
+
         return wrapper
+
     return decorator

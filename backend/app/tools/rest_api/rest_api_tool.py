@@ -6,8 +6,8 @@ import httpx
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from app.core.security.encryption import mask_pii
-from app.tools.base.tool_interface import BaseTool, ToolResult
 from app.observability.logging import get_logger
+from app.tools.base.tool_interface import BaseTool, ToolResult
 
 logger = get_logger(__name__)
 
@@ -36,7 +36,9 @@ class RestAPITool(BaseTool):
         if not url:
             return ToolResult(success=False, error="URL is required")
         try:
-            response = await self._make_request(method, url, headers=headers, json=data, params=params)
+            response = await self._make_request(
+                method, url, headers=headers, json=data, params=params
+            )
             try:
                 resp_data = response.json()
             except Exception:

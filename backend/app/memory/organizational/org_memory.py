@@ -13,7 +13,9 @@ logger = get_logger(__name__)
 
 class OrganizationalMemory:
     def __init__(self) -> None:
-        self.redis = redis.from_url(settings.redis_url, password=settings.redis_password or None, decode_responses=True)
+        self.redis = redis.from_url(
+            settings.redis_url, password=settings.redis_password or None, decode_responses=True
+        )
 
     async def store_team_knowledge(self, team: str, key: str, value: Any) -> None:
         k = f"org:team:{team}:{key}"
@@ -44,7 +46,9 @@ class OrganizationalMemory:
         return [json.loads(item) for item in raw]
 
     async def store_incident_pattern(self, pattern_key: str, pattern_data: dict[str, Any]) -> None:
-        await self.redis.set(f"org:incident_pattern:{pattern_key}", json.dumps(pattern_data), ex=604800)
+        await self.redis.set(
+            f"org:incident_pattern:{pattern_key}", json.dumps(pattern_data), ex=604800
+        )
 
     async def get_incident_pattern(self, pattern_key: str) -> dict[str, Any] | None:
         raw = await self.redis.get(f"org:incident_pattern:{pattern_key}")

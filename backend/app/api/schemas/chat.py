@@ -9,7 +9,9 @@ class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=5000, description="User message")
     session_id: str | None = Field(None, description="Existing session ID")
     context: dict[str, Any] = Field(default_factory=dict, description="Additional context")
-    channels: list[str] = Field(default_factory=lambda: ["slack"], description="Notification channels")
+    channels: list[str] = Field(
+        default_factory=lambda: ["slack"], description="Notification channels"
+    )
 
 
 class ChatResponse(BaseModel):

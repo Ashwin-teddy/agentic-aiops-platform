@@ -26,7 +26,7 @@ class TestModelRouter:
         model = router.get_model_for_task(TaskType.INTENT_DETECTION)
         assert model in AVAILABLE_MODELS
         config = AVAILABLE_MODELS[model]
-        assert config.tier == ModelTier.FAST
+        assert config.tier == ModelTier.BALANCED
 
     def test_get_model_for_task_planning(self, router: ModelRouter) -> None:
         model = router.get_model_for_task(TaskType.PLANNING)

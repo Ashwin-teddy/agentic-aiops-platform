@@ -5,8 +5,8 @@ from typing import Any
 from app.core.config.settings import settings
 from app.core.llm.router import get_model_router
 from app.core.llm.types import LLMMessage, TaskType
-from app.rag.retrieval.retriever import RAGRetriever
 from app.observability.logging import get_logger
+from app.rag.retrieval.retriever import RAGRetriever
 
 logger = get_logger(__name__)
 
@@ -33,7 +33,10 @@ class RAGPipeline:
         )
         messages = [
             LLMMessage(role="system", content=system_prompt or default_system),
-            LLMMessage(role="user", content=f"Context:\n{formatted['answer_context']}\n\nQuestion: {question}"),
+            LLMMessage(
+                role="user",
+                content=f"Context:\n{formatted['answer_context']}\n\nQuestion: {question}",
+            ),
         ]
         response = await self.router.chat(
             messages=messages,

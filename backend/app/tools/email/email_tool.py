@@ -36,7 +36,9 @@ class EmailTool(BaseTool):
                 with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as server:
                     server.starttls()
                     server.login(settings.smtp_username, settings.smtp_password)
-                    server.sendmail(settings.smtp_from, to if isinstance(to, list) else [to], msg.as_string())
+                    server.sendmail(
+                        settings.smtp_from, to if isinstance(to, list) else [to], msg.as_string()
+                    )
                 return ToolResult(success=True, data={"message": "Email sent successfully"})
             except Exception as e:
                 return ToolResult(success=False, error=str(e))

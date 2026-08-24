@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class WorkflowType(str, Enum):
+class WorkflowType(StrEnum):
     TROUBLESHOOTING = "troubleshooting"
     ACCESS_REQUEST = "access_request"
     INCIDENT_RESPONSE = "incident_response"
@@ -10,7 +10,7 @@ class WorkflowType(str, Enum):
     OFFBOARDING = "offboarding"
 
 
-class WorkflowState(str, Enum):
+class WorkflowState(StrEnum):
     INITIATED = "initiated"
     ANALYZING = "analyzing"
     PLANNING = "planning"

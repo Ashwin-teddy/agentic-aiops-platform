@@ -1,27 +1,27 @@
 from __future__ import annotations
 
-import time
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from app.core.llm.adapters.base import BaseLLMAdapter
-from app.core.llm.adapters.openai_adapter import OpenAIAdapter
+from app.core.config.settings import settings
 from app.core.llm.adapters.anthropic_adapter import AnthropicAdapter
 from app.core.llm.adapters.gemini_adapter import GeminiAdapter
 from app.core.llm.adapters.ollama_adapter import OllamaAdapter
+from app.core.llm.adapters.openai_adapter import OpenAIAdapter
 from app.core.llm.types import (
+    AVAILABLE_MODELS,
+    TASK_MODEL_ROUTING,
     LLMMessage,
     LLMResponse,
-    LLMUsage,
     ModelConfig,
     ModelProvider,
     TaskType,
-    AVAILABLE_MODELS,
-    TASK_MODEL_ROUTING,
     apply_environment_overrides,
 )
 from app.observability.logging import get_logger
 from app.observability.metrics import LLM_TOKENS_USED
-from app.core.config.settings import settings
+
+if TYPE_CHECKING:
+    from app.core.llm.adapters.base import BaseLLMAdapter
 
 logger = get_logger(__name__)
 
@@ -45,11 +45,11 @@ class ModelRouter:
     def _create_adapter(self, config: ModelConfig) -> BaseLLMAdapter:
         if config.provider == ModelProvider.OPENAI:
             return OpenAIAdapter(config)
-        elif config.provider == ModelProvider.ANTHROPIC:
+        if config.provider == ModelProvider.ANTHROPIC:
             return AnthropicAdapter(config)
-        elif config.provider == ModelProvider.GOOGLE:
+        if config.provider == ModelProvider.GOOGLE:
             return GeminiAdapter(config)
-        elif config.provider == ModelProvider.OLLAMA:
+        if config.provider == ModelProvider.OLLAMA:
             return OllamaAdapter(config)
         raise ValueError(f"Unsupported provider: {config.provider}")
 
@@ -70,7 +70,8 @@ class ModelRouter:
         candidates = TASK_MODEL_ROUTING.get(task, [self._default_model])
         if tier_preference:
             tier_filtered = [
-                k for k in candidates
+                k
+                for k in candidates
                 if AVAILABLE_MODELS.get(k) and AVAILABLE_MODELS[k].tier.value == tier_preference
             ]
             if tier_filtered:
@@ -108,8 +109,10 @@ class ModelRouter:
                     logger.info("llm_fallback", from_model=model_key, to_model=fallback_key)
                     fallback_adapter = self._get_or_create_adapter(fallback_key)
                     return await fallback_adapter.safe_chat(
-                        messages=messages, temperature=temperature,
-                        max_tokens=max_tokens, json_mode=json_mode,
+                        messages=messages,
+                        temperature=temperature,
+                        max_tokens=max_tokens,
+                        json_mode=json_mode,
                     )
             raise
 
@@ -125,7 +128,9 @@ class ModelRouter:
         model_key = model or self.get_model_for_task(task)
         adapter = self._get_or_create_adapter(model_key)
         async for chunk in adapter.chat_stream(
-            messages=messages, temperature=temperature, max_tokens=max_tokens,
+            messages=messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
         ):
             yield chunk
 
@@ -134,7 +139,11 @@ class ModelRouter:
         if not failed_config:
             return None
         for key, config in AVAILABLE_MODELS.items():
-            if key != failed_model and config.provider == failed_config.provider and config.tier == failed_config.tier:
+            if (
+                key != failed_model
+                and config.provider == failed_config.provider
+                and config.tier == failed_config.tier
+            ):
                 return key
         for key, config in AVAILABLE_MODELS.items():
             if key != failed_model and config.tier == failed_config.tier:

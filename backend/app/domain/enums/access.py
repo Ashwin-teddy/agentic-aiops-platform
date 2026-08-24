@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class AccessType(str, Enum):
+class AccessType(StrEnum):
     READ = "read"
     WRITE = "write"
     ADMIN = "admin"
@@ -9,7 +9,7 @@ class AccessType(str, Enum):
     EXECUTE = "execute"
 
 
-class ResourceType(str, Enum):
+class ResourceType(StrEnum):
     JIRA = "jira"
     CONFLUENCE = "confluence"
     GITHUB = "github"

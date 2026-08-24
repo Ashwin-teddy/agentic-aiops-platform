@@ -3,8 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from app.core.config.settings import settings
-from app.domain.enums.access import AccessType, ResourceType
-from app.domain.enums.risk import RiskLevel, RiskCategory
+from app.domain.enums.risk import RiskLevel
 from app.memory.organizational.org_memory import OrganizationalMemory
 from app.observability.logging import get_logger
 
@@ -65,7 +64,8 @@ class PolicyAgent:
             "requires_approval": risk_level in (RiskLevel.HIGH, RiskLevel.CRITICAL),
             "requires_manager_approval": risk_level in (RiskLevel.HIGH, RiskLevel.CRITICAL),
             "requires_security_approval": risk_level == RiskLevel.CRITICAL,
-            "auto_approve": risk_level == RiskLevel.LOW and adjusted_risk < settings.auto_approve_threshold,
+            "auto_approve": risk_level == RiskLevel.LOW
+            and adjusted_risk < settings.auto_approve_threshold,
         }
 
     async def _check_org_policies(
@@ -81,16 +81,18 @@ class PolicyAgent:
                 pass
             blocked_teams = policy.get("blocked_teams", [])
             if user_context and user_context.get("team") in blocked_teams:
-                violations.append(f"Team '{user_context['team']}' is not authorized for this resource")
+                violations.append(
+                    f"Team '{user_context['team']}' is not authorized for this resource"
+                )
         return {"compliant": len(violations) == 0, "violations": violations}
 
     @staticmethod
     def _score_to_level(score: float) -> RiskLevel:
         if score < settings.auto_approve_threshold:
             return RiskLevel.LOW
-        elif score < settings.high_risk_threshold:
+        if score < settings.high_risk_threshold:
             return RiskLevel.MEDIUM
-        elif score < settings.critical_risk_threshold:
+        if score < settings.critical_risk_threshold:
             return RiskLevel.HIGH
         return RiskLevel.CRITICAL
 

@@ -1,20 +1,19 @@
 from __future__ import annotations
 
-import json
 import time
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from app.core.llm.types import (
-    LLMMessage,
-    LLMResponse,
-    LLMUsage,
-    EmbeddingResult,
-    ModelConfig,
-    ModelProvider,
-)
-from app.core.security.encryption import mask_pii
 from app.observability.logging import get_logger
+
+if TYPE_CHECKING:
+    from app.core.llm.types import (
+        EmbeddingResult,
+        LLMMessage,
+        LLMResponse,
+        LLMUsage,
+        ModelConfig,
+    )
 
 logger = get_logger(__name__)
 
@@ -34,8 +33,7 @@ class BaseLLMAdapter(ABC):
         json_mode: bool = False,
         tools: list[dict[str, Any]] | None = None,
         **kwargs: Any,
-    ) -> LLMResponse:
-        ...
+    ) -> LLMResponse: ...
 
     @abstractmethod
     async def chat_stream(
@@ -44,12 +42,10 @@ class BaseLLMAdapter(ABC):
         temperature: float = 0.1,
         max_tokens: int | None = None,
         **kwargs: Any,
-    ):
-        ...
+    ): ...
 
     @abstractmethod
-    async def health_check(self) -> bool:
-        ...
+    async def health_check(self) -> bool: ...
 
     async def safe_chat(
         self,
@@ -116,16 +112,14 @@ class BaseEmbeddingAdapter(ABC):
         self.dimensions = config.embedding_dims
 
     @abstractmethod
-    async def embed_texts(self, texts: list[str]) -> EmbeddingResult:
-        ...
+    async def embed_texts(self, texts: list[str]) -> EmbeddingResult: ...
 
     async def embed_single(self, text: str) -> list[float]:
         result = await self.embed_texts([text])
         return result.embeddings[0]
 
     @abstractmethod
-    async def health_check(self) -> bool:
-        ...
+    async def health_check(self) -> bool: ...
 
     async def safe_embed(self, texts: list[str]) -> EmbeddingResult:
         start = time.monotonic()

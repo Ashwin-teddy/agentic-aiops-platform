@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
+from app.agents.access_management.access_agent import AccessManagementAgent
+from app.agents.human_approval.approval_agent import HumanApprovalAgent
+from app.agents.policy.policy_agent import PolicyAgent
 from app.api.dependencies.auth import CurrentUser, get_current_user
 from app.api.schemas.access import AccessRequestCreate, AccessRequestResponse
-from app.agents.access_management.access_agent import AccessManagementAgent
-from app.agents.policy.policy_agent import PolicyAgent
-from app.agents.human_approval.approval_agent import HumanApprovalAgent
 from app.domain.enums.risk import RiskLevel
 from app.integrations.google_drive import drive_service
 from app.observability.logging import get_logger
@@ -30,7 +30,9 @@ async def create_access_request(
         user_context={"justification": request.justification},
     )
     risk_level = RiskLevel(risk_eval["risk_level"])
-    needs_approval = request.resource_type == "google_drive" or not risk_eval.get("auto_approve", False)
+    needs_approval = request.resource_type == "google_drive" or not risk_eval.get(
+        "auto_approve", False
+    )
     result = await access_agent.process_access_request(
         user_id=current_user.user_id,
         resource_type=request.resource_type,
@@ -66,8 +68,7 @@ async def create_access_request(
 async def get_pending_requests(
     current_user: CurrentUser = Depends(get_current_user),
 ) -> list[dict]:
-    approvals = await approval_agent.get_pending_approvals_for_user(current_user.user_id)
-    return approvals
+    return await approval_agent.get_pending_approvals_for_user(current_user.user_id)
 
 
 @router.post("/approve/{approval_id}")

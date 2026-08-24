@@ -69,13 +69,19 @@ class TroubleshootingAgent:
             logger.error("rag_retrieval_failed", error=str(e))
 
         messages = [
-            LLMMessage(role="system", content=TROUBLESHOOT_PROMPT.format(
-                service=service,
-                components=", ".join(components),
-                diagnostics=str(diagnostic_data)[:8000],
-                knowledge_context=knowledge_context[:4000],
-            )),
-            LLMMessage(role="user", content="Analyze the above diagnostic data and provide root cause analysis and remediation steps."),
+            LLMMessage(
+                role="system",
+                content=TROUBLESHOOT_PROMPT.format(
+                    service=service,
+                    components=", ".join(components),
+                    diagnostics=str(diagnostic_data)[:8000],
+                    knowledge_context=knowledge_context[:4000],
+                ),
+            ),
+            LLMMessage(
+                role="user",
+                content="Analyze the above diagnostic data and provide root cause analysis and remediation steps.",
+            ),
         ]
         try:
             response = await self.router.chat(
@@ -104,29 +110,43 @@ class TroubleshootingAgent:
         if k8s_tool:
             try:
                 pod_result = await k8s_tool.safe_execute(action="list_pods", namespace=namespace)
-                diagnostics["pods"] = pod_result.data if pod_result.success else {"error": pod_result.error}
+                diagnostics["pods"] = (
+                    pod_result.data if pod_result.success else {"error": pod_result.error}
+                )
             except Exception:
                 pass
             try:
-                events_result = await k8s_tool.safe_execute(action="list_events", namespace=namespace)
-                diagnostics["events"] = events_result.data if events_result.success else {"error": events_result.error}
+                events_result = await k8s_tool.safe_execute(
+                    action="list_events", namespace=namespace
+                )
+                diagnostics["events"] = (
+                    events_result.data if events_result.success else {"error": events_result.error}
+                )
             except Exception:
                 pass
             try:
-                dep_result = await k8s_tool.safe_execute(action="list_deployments", namespace=namespace)
-                diagnostics["deployments"] = dep_result.data if dep_result.success else {"error": dep_result.error}
+                dep_result = await k8s_tool.safe_execute(
+                    action="list_deployments", namespace=namespace
+                )
+                diagnostics["deployments"] = (
+                    dep_result.data if dep_result.success else {"error": dep_result.error}
+                )
             except Exception:
                 pass
         sn_tool = self.tool_registry.get("servicenow")
         if sn_tool:
             try:
                 kb_result = await sn_tool.safe_execute(action="search_knowledge", query=service)
-                diagnostics["servicenow_kb"] = kb_result.data if kb_result.success else {"error": kb_result.error}
+                diagnostics["servicenow_kb"] = (
+                    kb_result.data if kb_result.success else {"error": kb_result.error}
+                )
             except Exception:
                 pass
         return diagnostics
 
-    async def execute_remediation(self, remediation: dict[str, Any], dry_run: bool = True) -> dict[str, Any]:
+    async def execute_remediation(
+        self, remediation: dict[str, Any], dry_run: bool = True
+    ) -> dict[str, Any]:
         tool_name = remediation.get("tool")
         if not tool_name:
             return {"success": False, "error": "No tool specified for remediation"}
@@ -135,5 +155,9 @@ class TroubleshootingAgent:
             return {"success": False, "error": f"Tool '{tool_name}' not found"}
         params = remediation.get("parameters", {})
         if dry_run:
-            return {"success": True, "dry_run": True, "would_execute": {"tool": tool_name, "params": params}}
+            return {
+                "success": True,
+                "dry_run": True,
+                "would_execute": {"tool": tool_name, "params": params},
+            }
         return await tool.safe_execute(**params)

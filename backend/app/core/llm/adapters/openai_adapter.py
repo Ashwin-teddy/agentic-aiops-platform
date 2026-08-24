@@ -1,21 +1,23 @@
 from __future__ import annotations
 
-import json
-from typing import Any, AsyncGenerator
+from typing import TYPE_CHECKING, Any
 
 from openai import AsyncOpenAI
 
 from app.core.config.settings import settings
-from app.core.llm.adapters.base import BaseLLMAdapter, BaseEmbeddingAdapter
+from app.core.llm.adapters.base import BaseEmbeddingAdapter, BaseLLMAdapter
 from app.core.llm.types import (
+    EmbeddingResult,
     LLMMessage,
     LLMResponse,
     LLMUsage,
-    EmbeddingResult,
     ModelConfig,
     ModelProvider,
 )
 from app.observability.logging import get_logger
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 logger = get_logger(__name__)
 
@@ -60,13 +62,15 @@ class OpenAIAdapter(BaseLLMAdapter):
         tool_calls = []
         if choice.message.tool_calls:
             for tc in choice.message.tool_calls:
-                tool_calls.append({
-                    "id": tc.id,
-                    "function": {
-                        "name": tc.function.name,
-                        "arguments": tc.function.arguments,
-                    },
-                })
+                tool_calls.append(
+                    {
+                        "id": tc.id,
+                        "function": {
+                            "name": tc.function.name,
+                            "arguments": tc.function.arguments,
+                        },
+                    }
+                )
         return LLMResponse(
             content=choice.message.content or "",
             model=response.model,
@@ -116,7 +120,7 @@ class OpenAIEmbeddingAdapter(BaseEmbeddingAdapter):
         batch_size = 100
         total_tokens = 0
         for i in range(0, len(texts), batch_size):
-            batch = texts[i:i + batch_size]
+            batch = texts[i : i + batch_size]
             response = await self.client.embeddings.create(
                 model=self.model_id,
                 input=batch,

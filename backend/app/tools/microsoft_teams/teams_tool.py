@@ -39,9 +39,11 @@ class MicrosoftTeamsTool(BaseTool):
             self._token = await self._get_token()
         async with httpx.AsyncClient() as client:
             resp = await client.request(
-                method, f"{self.base_url}{path}",
+                method,
+                f"{self.base_url}{path}",
                 headers={"Authorization": f"Bearer {self._token}"},
-                timeout=self.timeout_seconds, **kwargs,
+                timeout=self.timeout_seconds,
+                **kwargs,
             )
             resp.raise_for_status()
             return resp.json() if resp.content else {}
@@ -51,14 +53,18 @@ class MicrosoftTeamsTool(BaseTool):
         if action == "send_message":
             team_id = kwargs["team_id"]
             channel_id = kwargs["channel_id"]
-            data = await self._request("POST", f"/teams/{team_id}/channels/{channel_id}/messages", json={
-                "body": {"content": kwargs.get("text", "")},
-            })
+            data = await self._request(
+                "POST",
+                f"/teams/{team_id}/channels/{channel_id}/messages",
+                json={
+                    "body": {"content": kwargs.get("text", "")},
+                },
+            )
             return ToolResult(success=True, data=data)
-        elif action == "list_teams":
+        if action == "list_teams":
             data = await self._request("GET", "/me/joinedTeams")
             return ToolResult(success=True, data=data.get("value", []))
-        elif action == "list_channels":
+        if action == "list_channels":
             team_id = kwargs["team_id"]
             data = await self._request("GET", f"/teams/{team_id}/channels")
             return ToolResult(success=True, data=data.get("value", []))

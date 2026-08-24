@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import redis.asyncio as redis
@@ -14,7 +14,9 @@ logger = get_logger(__name__)
 
 class LongTermMemory:
     def __init__(self) -> None:
-        self.redis = redis.from_url(settings.redis_url, password=settings.redis_password or None, decode_responses=True)
+        self.redis = redis.from_url(
+            settings.redis_url, password=settings.redis_password or None, decode_responses=True
+        )
 
     async def store_preference(self, user_id: str, key: str, value: Any) -> None:
         pref_key = f"user_prefs:{user_id}"
@@ -29,17 +31,27 @@ class LongTermMemory:
         raw = await self.redis.hgetall(f"user_prefs:{user_id}")
         return {k: json.loads(v) for k, v in raw.items()}
 
-    async def store_interaction_pattern(self, user_id: str, pattern_type: str, pattern_data: dict[str, Any]) -> None:
+    async def store_interaction_pattern(
+        self, user_id: str, pattern_type: str, pattern_data: dict[str, Any]
+    ) -> None:
         key = f"user_patterns:{user_id}:{pattern_type}"
         await self.redis.set(key, json.dumps(pattern_data), ex=2592000)
 
-    async def get_interaction_pattern(self, user_id: str, pattern_type: str) -> dict[str, Any] | None:
+    async def get_interaction_pattern(
+        self, user_id: str, pattern_type: str
+    ) -> dict[str, Any] | None:
         raw = await self.redis.get(f"user_patterns:{user_id}:{pattern_type}")
         return json.loads(raw) if raw else None
 
-    async def store_resolved_incident(self, user_id: str, incident_id: str, resolution: dict[str, Any]) -> None:
+    async def store_resolved_incident(
+        self, user_id: str, incident_id: str, resolution: dict[str, Any]
+    ) -> None:
         key = f"resolved:{user_id}"
-        entry = {"incident_id": incident_id, "resolution": resolution, "timestamp": datetime.now(timezone.utc).isoformat()}
+        entry = {
+            "incident_id": incident_id,
+            "resolution": resolution,
+            "timestamp": datetime.now(UTC).isoformat(),
+        }
         await self.redis.rpush(key, json.dumps(entry))
         await self.redis.ltrim(key, -100, -1)
 

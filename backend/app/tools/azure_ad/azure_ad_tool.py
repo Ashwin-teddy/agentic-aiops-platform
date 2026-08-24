@@ -17,7 +17,7 @@ class AzureADTool(BaseTool):
 
     def __init__(self) -> None:
         super().__init__()
-        self.base_url = f"https://graph.microsoft.com/v1.0"
+        self.base_url = "https://graph.microsoft.com/v1.0"
         self.client_id = settings.azure_ad_client_id
         self.client_secret = settings.azure_ad_client_secret
         self.tenant_id = settings.azure_ad_tenant_id
@@ -42,7 +42,8 @@ class AzureADTool(BaseTool):
             self._token = await self._get_token()
         async with httpx.AsyncClient() as client:
             resp = await client.request(
-                method, f"{self.base_url}{path}",
+                method,
+                f"{self.base_url}{path}",
                 headers={"Authorization": f"Bearer {self._token}"},
                 timeout=self.timeout_seconds,
                 **kwargs,
@@ -50,7 +51,8 @@ class AzureADTool(BaseTool):
             if resp.status_code == 401:
                 self._token = await self._get_token()
                 resp = await client.request(
-                    method, f"{self.base_url}{path}",
+                    method,
+                    f"{self.base_url}{path}",
                     headers={"Authorization": f"Bearer {self._token}"},
                     timeout=self.timeout_seconds,
                     **kwargs,
@@ -64,24 +66,36 @@ class AzureADTool(BaseTool):
             user_id = kwargs["user_id"]
             data = await self._request("GET", f"/users/{user_id}")
             return ToolResult(success=True, data=data)
-        elif action == "list_groups":
+        if action == "list_groups":
             user_id = kwargs["user_id"]
             data = await self._request("GET", f"/users/{user_id}/memberOf")
             return ToolResult(success=True, data=data)
-        elif action == "add_to_group":
+        if action == "add_to_group":
             user_id = kwargs["user_id"]
             group_id = kwargs["group_id"]
-            await self._request("POST", f"/groups/{group_id}/members", json={"@odata.id": f"{self.base_url}/users/{user_id}"})
-            return ToolResult(success=True, data={"message": f"User {user_id} added to group {group_id}"})
-        elif action == "assign_role":
+            await self._request(
+                "POST",
+                f"/groups/{group_id}/members",
+                json={"@odata.id": f"{self.base_url}/users/{user_id}"},
+            )
+            return ToolResult(
+                success=True, data={"message": f"User {user_id} added to group {group_id}"}
+            )
+        if action == "assign_role":
             user_id = kwargs["user_id"]
             role_id = kwargs["role_id"]
-            await self._request("POST", f"/roleManagement/directory/roleAssignments", json={
-                "principalId": user_id,
-                "roleDefinitionId": role_id,
-                "directoryScopeId": "/",
-            })
-            return ToolResult(success=True, data={"message": f"Role {role_id} assigned to user {user_id}"})
+            await self._request(
+                "POST",
+                "/roleManagement/directory/roleAssignments",
+                json={
+                    "principalId": user_id,
+                    "roleDefinitionId": role_id,
+                    "directoryScopeId": "/",
+                },
+            )
+            return ToolResult(
+                success=True, data={"message": f"Role {role_id} assigned to user {user_id}"}
+            )
         return ToolResult(success=False, error=f"Unknown action: {action}")
 
     async def validate_params(self, **kwargs: Any) -> bool:

@@ -4,8 +4,8 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
 from app.core.config.settings import settings
 from app.observability.logging import setup_logging
-from app.observability.tracing import setup_tracing
 from app.observability.metrics import setup_metrics
+from app.observability.tracing import setup_tracing
 
 setup_logging(log_level="DEBUG" if settings.app_debug else "INFO")
 setup_tracing()
@@ -30,7 +30,7 @@ app.add_middleware(
 if settings.is_production:
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
 
-from app.api.routes import auth, chat, access, health, models, drive
+from app.api.routes import access, auth, chat, drive, health, models
 
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(chat.router, prefix="/api/v1")
@@ -43,8 +43,8 @@ app.include_router(drive.router, prefix="/api/v1")
 @app.on_event("startup")
 async def startup() -> None:
     from app.db.session import init_db
-    from app.tools.base.tool_registry import get_tool_registry
     from app.rag.vector_store.qdrant_store import QdrantVectorStore
+    from app.tools.base.tool_registry import get_tool_registry
 
     await init_db()
     registry = get_tool_registry()
@@ -62,6 +62,7 @@ async def startup() -> None:
         ("RestAPITool", "app.tools.rest_api.rest_api_tool"),
     ]
     import importlib
+
     for cls_name, module_path in tool_classes:
         try:
             mod = importlib.import_module(module_path)
@@ -79,4 +80,5 @@ async def startup() -> None:
 @app.on_event("shutdown")
 async def shutdown() -> None:
     from app.db.session import close_db
+
     await close_db()

@@ -38,7 +38,9 @@ async def oauth_callback(code: str, state: str) -> RedirectResponse:
         logger.error("google_drive_oauth_callback_failed", error=str(e))
         raise HTTPException(status_code=502, detail=f"Google authorization failed: {e}")
     frontend_url = settings.cors_origins[0] if settings.cors_origins else ""
-    redirect = f"{frontend_url}/access?drive=connected" if frontend_url else "/access?drive=connected"
+    redirect = (
+        f"{frontend_url}/access?drive=connected" if frontend_url else "/access?drive=connected"
+    )
     return RedirectResponse(url=redirect)
 
 

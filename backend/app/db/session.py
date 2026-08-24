@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
+from typing import TYPE_CHECKING
 
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
@@ -10,6 +10,9 @@ from sqlalchemy.ext.asyncio import (
 )
 
 from app.core.config.settings import settings
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 engine = create_async_engine(
     settings.database_url,
@@ -42,6 +45,7 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
 
 async def init_db() -> None:
     from app.db.base import Base
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 

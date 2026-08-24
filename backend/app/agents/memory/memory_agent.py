@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.memory.session.session_memory import SessionMemory
 from app.memory.conversation.conversation_memory import ConversationMemory
 from app.memory.long_term.long_term_memory import LongTermMemory
 from app.memory.organizational.org_memory import OrganizationalMemory
+from app.memory.session.session_memory import SessionMemory
 from app.observability.logging import get_logger
 
 logger = get_logger(__name__)
@@ -26,13 +26,14 @@ class MemoryManager:
         return session_id
 
     async def get_session_context(self, session_id: str) -> dict[str, Any]:
-        context = await self.session.get_context(session_id)
-        return context
+        return await self.session.get_context(session_id)
 
     async def update_session_context(self, session_id: str, key: str, value: Any) -> None:
         await self.session.update_context(session_id, key, value)
 
-    async def add_conversation_turn(self, user_id: str, session_id: str, user_msg: str, assistant_msg: str, intent: str = "") -> None:
+    async def add_conversation_turn(
+        self, user_id: str, session_id: str, user_msg: str, assistant_msg: str, intent: str = ""
+    ) -> None:
         await self.conversation.add_turn(user_id, session_id, user_msg, assistant_msg, intent)
 
     async def get_user_history(self, user_id: str, limit: int = 20) -> list[dict[str, Any]]:

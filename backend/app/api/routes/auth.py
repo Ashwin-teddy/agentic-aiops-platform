@@ -1,18 +1,25 @@
 from __future__ import annotations
 
-import hashlib
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+import bcrypt
+
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 
 from app.api.dependencies.auth import CurrentUser, get_current_user
-from app.api.schemas.auth import LoginRequest, RegisterRequest, AzureADLoginRequest, TokenResponse, UserResponse
+from app.api.schemas.auth import (
+    AzureADLoginRequest,
+    LoginRequest,
+    RegisterRequest,
+    TokenResponse,
+    UserResponse,
+)
 from app.core.security.jwt import create_token_pair
 from app.core.security.oauth2 import AzureADProvider
 from app.core.security.rbac import RBACManager
-from app.db.session import get_session
 from app.db.models.user import UserModel
+from app.db.session import get_session
 from app.observability.logging import get_logger
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -28,10 +35,13 @@ async def login(request: LoginRequest) -> TokenResponse:
         result = await session.execute(select(UserModel).where(UserModel.email == request.email))
         user = result.scalar_one_or_none()
         if not user:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
-        password_hash = hashlib.sha256(request.password.encode()).hexdigest()
-        if user.password_hash != password_hash:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password"
+            )
+        if not bcrypt.checkpw(request.password.encode(), user.password_hash.encode()):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password"
+            )
         tokens = create_token_pair(
             subject=str(user.id),
             roles=[user.role],
@@ -51,12 +61,14 @@ async def register(request: RegisterRequest) -> TokenResponse:
     async with get_session() as session:
         existing = await session.execute(select(UserModel).where(UserModel.email == request.email))
         if existing.scalar_one_or_none():
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT, detail="Email already registered"
+            )
         user = UserModel(
             id=uuid.uuid4(),
             email=request.email,
             display_name=request.display_name,
-            password_hash=hashlib.sha256(request.password.encode()).hexdigest(),
+            password_hash=bcrypt.hashpw(request.password.encode(), bcrypt.gensalt()).decode(),
             role="user",
         )
         session.add(user)
@@ -77,6 +89,7 @@ async def register(request: RegisterRequest) -> TokenResponse:
 @router.get("/azure-ad/authorize")
 async def azure_ad_authorize() -> dict[str, str]:
     import secrets
+
     state = secrets.token_urlsafe(32)
     url = await azure_ad_provider.get_authorization_url(state)
     return {"authorization_url": url, "state": state}
@@ -115,6 +128,7 @@ async def get_me(current_user: CurrentUser = Depends(get_current_user)) -> UserR
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh_token(refresh_token: str) -> TokenResponse:
     from app.core.security.jwt import verify_token
+
     try:
         payload = verify_token(refresh_token, expected_type="refresh")
         tokens = create_token_pair(subject=payload.sub)
@@ -124,4 +138,6 @@ async def refresh_token(refresh_token: str) -> TokenResponse:
             expires_in=tokens.expires_in,
         )
     except ValueError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
+        )

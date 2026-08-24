@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from kubernetes import client, config as k8s_config
+from kubernetes import client
+from kubernetes import config as k8s_config
 
 from app.core.config.settings import settings
 from app.tools.base.tool_interface import BaseTool, ToolResult
@@ -38,35 +39,69 @@ class KubernetesTool(BaseTool):
         try:
             if action == "list_pods":
                 pods = self._core_v1.list_namespaced_pod(namespace)
-                pod_list = [{"name": p.metadata.name, "status": p.status.phase, "node": p.spec.node_name} for p in pods.items]
+                pod_list = [
+                    {"name": p.metadata.name, "status": p.status.phase, "node": p.spec.node_name}
+                    for p in pods.items
+                ]
                 return ToolResult(success=True, data={"pods": pod_list})
-            elif action == "get_pod":
+            if action == "get_pod":
                 pod = self._core_v1.read_namespaced_pod(kwargs["pod_name"], namespace)
-                return ToolResult(success=True, data={"name": pod.metadata.name, "status": pod.status.phase})
-            elif action == "list_deployments":
+                return ToolResult(
+                    success=True, data={"name": pod.metadata.name, "status": pod.status.phase}
+                )
+            if action == "list_deployments":
                 deps = self._apps_v1.list_namespaced_deployment(namespace)
-                dep_list = [{"name": d.metadata.name, "replicas": d.spec.replicas, "ready": d.status.ready_replicas} for d in deps.items]
+                dep_list = [
+                    {
+                        "name": d.metadata.name,
+                        "replicas": d.spec.replicas,
+                        "ready": d.status.ready_replicas,
+                    }
+                    for d in deps.items
+                ]
                 return ToolResult(success=True, data={"deployments": dep_list})
-            elif action == "scale_deployment":
+            if action == "scale_deployment":
                 name = kwargs["name"]
                 replicas = kwargs["replicas"]
-                self._apps_v1.patch_namespaced_deployment_scale(name, namespace, {"spec": {"replicas": replicas}})
-                return ToolResult(success=True, data={"message": f"Deployment {name} scaled to {replicas}"})
-            elif action == "restart_deployment":
+                self._apps_v1.patch_namespaced_deployment_scale(
+                    name, namespace, {"spec": {"replicas": replicas}}
+                )
+                return ToolResult(
+                    success=True, data={"message": f"Deployment {name} scaled to {replicas}"}
+                )
+            if action == "restart_deployment":
                 import datetime
+
                 name = kwargs["name"]
-                self._apps_v1.patch_namespaced_deployment(name, namespace, {
-                    "spec": {"template": {"metadata": {"annotations": {"kubectl.kubernetes.io/restartedAt": datetime.datetime.utcnow().isoformat()}}}}
-                })
+                self._apps_v1.patch_namespaced_deployment(
+                    name,
+                    namespace,
+                    {
+                        "spec": {
+                            "template": {
+                                "metadata": {
+                                    "annotations": {
+                                        "kubectl.kubernetes.io/restartedAt": datetime.datetime.utcnow().isoformat()
+                                    }
+                                }
+                            }
+                        }
+                    },
+                )
                 return ToolResult(success=True, data={"message": f"Deployment {name} restarted"})
-            elif action == "list_events":
+            if action == "list_events":
                 events = self._core_v1.list_namespaced_event(namespace)
-                event_list = [{"type": e.type, "reason": e.reason, "message": e.message} for e in events.items[:20]]
+                event_list = [
+                    {"type": e.type, "reason": e.reason, "message": e.message}
+                    for e in events.items[:20]
+                ]
                 return ToolResult(success=True, data={"events": event_list})
-            elif action == "get_logs":
+            if action == "get_logs":
                 pod_name = kwargs["pod_name"]
                 container = kwargs.get("container")
-                logs = self._core_v1.read_namespaced_pod_log(pod_name, namespace, container=container)
+                logs = self._core_v1.read_namespaced_pod_log(
+                    pod_name, namespace, container=container
+                )
                 return ToolResult(success=True, data={"logs": logs[-5000:]})
         except Exception as e:
             return ToolResult(success=False, error=str(e))

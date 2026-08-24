@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-from typing import Any
-
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from app.core.security.jwt import verify_token, TokenPayload
-from app.core.security.rbac import RBACManager, Permission
+from app.core.security.jwt import verify_token
+from app.core.security.rbac import Permission, RBACManager
 from app.observability.logging import get_logger
 
 logger = get_logger(__name__)

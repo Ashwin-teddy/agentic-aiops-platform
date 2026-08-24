@@ -1,13 +1,16 @@
-from prometheus_client import Counter, Histogram, Gauge, Info
-
+from prometheus_client import Counter, Gauge, Histogram, Info
 
 REQUEST_COUNT = Counter("aiops_requests_total", "Total requests", ["method", "endpoint", "status"])
-REQUEST_LATENCY = Histogram("aiops_request_latency_seconds", "Request latency", ["method", "endpoint"])
+REQUEST_LATENCY = Histogram(
+    "aiops_request_latency_seconds", "Request latency", ["method", "endpoint"]
+)
 ACTIVE_AGENTS = Gauge("aiops_active_agents", "Number of active agents")
 PLATFORM_INFO = Info("aiops_platform", "Platform info")
 LLM_CALLS = Counter("aiops_llm_calls_total", "Total LLM calls", ["provider", "model", "status"])
 LLM_TOKENS_USED = Counter("aiops_llm_tokens_total", "Total LLM tokens used", ["model"])
-AGENT_EXECUTIONS = Counter("aiops_agent_executions_total", "Total agent executions", ["agent", "status"])
+AGENT_EXECUTIONS = Counter(
+    "aiops_agent_executions_total", "Total agent executions", ["agent", "status"]
+)
 
 
 def setup_metrics() -> None:

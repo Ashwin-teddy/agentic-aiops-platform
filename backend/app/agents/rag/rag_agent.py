@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from app.rag.pipeline.rag_pipeline import RAGPipeline, get_rag_pipeline
-from app.rag.retrieval.retriever import RAGRetriever
 from app.observability.logging import get_logger
+from app.rag.pipeline.rag_pipeline import get_rag_pipeline
+from app.rag.retrieval.retriever import RAGRetriever
 
 logger = get_logger(__name__)
 
@@ -27,7 +27,9 @@ class RAGAgent:
             formatted = self.retriever.format_with_citations(results)
             response["citations"] = formatted["citations"]
         if generate_answer:
-            llm_response = await self.pipeline.query(query, top_k=top_k, source_filter=source_filter)
+            llm_response = await self.pipeline.query(
+                query, top_k=top_k, source_filter=source_filter
+            )
             response["answer"] = llm_response.get("answer", "")
             response["tokens_used"] = llm_response.get("tokens_used", 0)
         logger.info("rag_search_complete", query_length=len(query), results=len(results))

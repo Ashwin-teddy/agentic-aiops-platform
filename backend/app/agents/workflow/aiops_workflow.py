@@ -1,30 +1,26 @@
 from __future__ import annotations
 
-import json
 import time
 import uuid
-from datetime import datetime, timezone
-from typing import Any, Annotated, TypedDict
+from typing import Any, TypedDict
 
-from langgraph.graph import StateGraph, END
-from langgraph.graph.message import add_messages
 from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph import END, StateGraph
 
-from app.agents.intent_detection.intent_agent import IntentDetectionAgent
-from app.agents.planner.planner_agent import PlannerAgent
-from app.agents.troubleshooting.troubleshooting_agent import TroubleshootingAgent
-from app.agents.rag.rag_agent import RAGAgent
-from app.agents.policy.policy_agent import PolicyAgent
 from app.agents.access_management.access_agent import AccessManagementAgent
-from app.agents.human_approval.approval_agent import HumanApprovalAgent
-from app.agents.notification.notification_agent import NotificationAgent
 from app.agents.audit.audit_agent import AuditAgent
+from app.agents.human_approval.approval_agent import HumanApprovalAgent
+from app.agents.intent_detection.intent_agent import IntentDetectionAgent
 from app.agents.memory.memory_agent import MemoryManager
+from app.agents.notification.notification_agent import NotificationAgent
+from app.agents.planner.planner_agent import PlannerAgent
+from app.agents.policy.policy_agent import PolicyAgent
+from app.agents.rag.rag_agent import RAGAgent
+from app.agents.troubleshooting.troubleshooting_agent import TroubleshootingAgent
 from app.domain.enums.intent import IntentType
 from app.domain.enums.risk import RiskLevel
-from app.domain.enums.status import TaskStatus
-from app.tools.base.tool_registry import get_tool_registry
 from app.observability.logging import get_logger
+from app.tools.base.tool_registry import get_tool_registry
 
 logger = get_logger(__name__)
 
@@ -87,19 +83,27 @@ class AIOpsWorkflow:
 
         workflow.set_entry_point("detect_intent")
         workflow.add_edge("detect_intent", "plan")
-        workflow.add_conditional_edges("plan", self._route_by_intent, {
-            "troubleshooting": "troubleshoot_collect",
-            "low_risk_access": "evaluate_risk",
-            "high_risk_access": "evaluate_risk",
-            "general": "search_knowledge",
-        })
+        workflow.add_conditional_edges(
+            "plan",
+            self._route_by_intent,
+            {
+                "troubleshooting": "troubleshoot_collect",
+                "low_risk_access": "evaluate_risk",
+                "high_risk_access": "evaluate_risk",
+                "general": "search_knowledge",
+            },
+        )
         workflow.add_edge("troubleshoot_collect", "search_knowledge")
         workflow.add_edge("search_knowledge", "analyze_root_cause")
         workflow.add_edge("analyze_root_cause", "execute_remediation")
-        workflow.add_conditional_edges("evaluate_risk", self._route_by_risk, {
-            "auto_approve": "process_access",
-            "needs_approval": "request_approval",
-        })
+        workflow.add_conditional_edges(
+            "evaluate_risk",
+            self._route_by_risk,
+            {
+                "auto_approve": "process_access",
+                "needs_approval": "request_approval",
+            },
+        )
         workflow.add_edge("process_access", "notify")
         workflow.add_edge("request_approval", "notify")
         workflow.add_edge("execute_remediation", "notify")
@@ -112,9 +116,9 @@ class AIOpsWorkflow:
         intent = state.get("intent", "general")
         if intent == IntentType.TROUBLESHOOTING.value:
             return "troubleshooting"
-        elif intent == IntentType.LOW_RISK_ACCESS.value:
+        if intent == IntentType.LOW_RISK_ACCESS.value:
             return "low_risk_access"
-        elif intent == IntentType.HIGH_RISK_ACCESS.value:
+        if intent == IntentType.HIGH_RISK_ACCESS.value:
             return "high_risk_access"
         return "general"
 
@@ -125,108 +129,150 @@ class AIOpsWorkflow:
         return "needs_approval"
 
     async def _detect_intent_node(self, state: AIOpsState) -> dict[str, Any]:
-        result = await self.intent_agent.detect(state["user_message"])
-        return {
-            "intent": result["intent"].value,
-            "intent_confidence": result["confidence"],
-            "entities": result["entities"],
-            "status": "intent_detected",
-        }
+        try:
+            result = await self.intent_agent.detect(state["user_message"])
+            return {
+                "intent": result["intent"].value,
+                "intent_confidence": result["confidence"],
+                "entities": result["entities"],
+                "status": "intent_detected",
+            }
+        except Exception as e:
+            logger.error("detect_intent_failed", error=str(e))
+            return {"intent": "general", "intent_confidence": 0.0, "entities": {}, "error": str(e), "status": "intent_detection_failed"}
 
     async def _plan_node(self, state: AIOpsState) -> dict[str, Any]:
-        intent = IntentType(state["intent"])
-        plan = await self.planner_agent.create_plan(
-            intent=intent,
-            entities=state["entities"],
-            available_tools=self.tool_registry.list_tools(),
-            context=state.get("metadata", {}),
-        )
-        return {"plan": plan, "current_step": 0, "status": "planned"}
+        try:
+            intent = IntentType(state["intent"])
+            plan = await self.planner_agent.create_plan(
+                intent=intent,
+                entities=state["entities"],
+                available_tools=self.tool_registry.list_tools(),
+                context=state.get("metadata", {}),
+            )
+            return {"plan": plan, "current_step": 0, "status": "planned"}
+        except Exception as e:
+            logger.error("plan_failed", error=str(e))
+            return {"plan": {}, "current_step": 0, "error": str(e), "status": "planning_failed"}
 
     async def _troubleshoot_collect_node(self, state: AIOpsState) -> dict[str, Any]:
-        entities = state["entities"]
-        service = entities.get("affected_service", "unknown")
-        diagnostics = await self.troubleshooting_agent.collect_diagnostics(service=service)
-        return {"diagnostics": diagnostics, "status": "diagnostics_collected"}
+        try:
+            entities = state["entities"]
+            service = entities.get("affected_service", "unknown")
+            diagnostics = await self.troubleshooting_agent.collect_diagnostics(service=service)
+            return {"diagnostics": diagnostics, "status": "diagnostics_collected"}
+        except Exception as e:
+            logger.error("troubleshoot_collect_failed", error=str(e))
+            return {"diagnostics": {}, "error": str(e), "status": "diagnostics_failed"}
 
     async def _search_knowledge_node(self, state: AIOpsState) -> dict[str, Any]:
-        query = state["user_message"]
-        results = await self.rag_agent.search_knowledge(query)
-        return {"knowledge_results": results, "status": "knowledge_searched"}
+        try:
+            query = state["user_message"]
+            results = await self.rag_agent.search_knowledge(query)
+            return {"knowledge_results": results, "status": "knowledge_searched"}
+        except Exception as e:
+            logger.error("search_knowledge_failed", error=str(e))
+            return {"knowledge_results": {}, "error": str(e), "status": "knowledge_search_failed"}
 
     async def _analyze_root_cause_node(self, state: AIOpsState) -> dict[str, Any]:
-        entities = state["entities"]
-        service = entities.get("affected_service", "unknown")
-        diagnosis = await self.troubleshooting_agent.diagnose(
-            service=service,
-            components=entities.get("components", []),
-            diagnostic_data=state["diagnostics"],
-            session_id=state["session_id"],
-        )
-        return {"diagnosis": diagnosis, "status": "root_cause_analyzed"}
+        try:
+            entities = state["entities"]
+            service = entities.get("affected_service", "unknown")
+            diagnosis = await self.troubleshooting_agent.diagnose(
+                service=service,
+                components=entities.get("components", []),
+                diagnostic_data=state["diagnostics"],
+                session_id=state["session_id"],
+            )
+            return {"diagnosis": diagnosis, "status": "root_cause_analyzed"}
+        except Exception as e:
+            logger.error("analyze_root_cause_failed", error=str(e))
+            return {"diagnosis": {}, "error": str(e), "status": "root_cause_analysis_failed"}
 
     async def _evaluate_risk_node(self, state: AIOpsState) -> dict[str, Any]:
-        entities = state["entities"]
-        risk_eval = await self.policy_agent.evaluate_risk(
-            resource_type=entities.get("resource_type", "unknown"),
-            access_type=entities.get("access_level", "read"),
-        )
-        return {"risk_evaluation": risk_eval, "status": "risk_evaluated"}
+        try:
+            entities = state["entities"]
+            risk_eval = await self.policy_agent.evaluate_risk(
+                resource_type=entities.get("resource_type", "unknown"),
+                access_type=entities.get("access_level", "read"),
+            )
+            return {"risk_evaluation": risk_eval, "status": "risk_evaluated"}
+        except Exception as e:
+            logger.error("evaluate_risk_failed", error=str(e))
+            return {"risk_evaluation": {"risk_level": "high", "risk_score": 1.0, "auto_approve": False}, "error": str(e), "status": "risk_evaluation_failed"}
 
     async def _process_access_node(self, state: AIOpsState) -> dict[str, Any]:
-        entities = state["entities"]
-        risk_level = RiskLevel(state["risk_evaluation"].get("risk_level", "low"))
-        result = await self.access_agent.process_access_request(
-            user_id=state["user_id"],
-            resource_type=entities.get("resource_type", "unknown"),
-            resource_identifier=entities.get("resource_identifier", ""),
-            access_type=entities.get("access_level", "read"),
-            risk_level=risk_level,
-            justification=entities.get("justification", ""),
-            auto_execute=True,
-        )
-        return {"access_result": result, "status": "access_processed"}
+        try:
+            entities = state["entities"]
+            risk_level = RiskLevel(state["risk_evaluation"].get("risk_level", "low"))
+            result = await self.access_agent.process_access_request(
+                user_id=state["user_id"],
+                resource_type=entities.get("resource_type", "unknown"),
+                resource_identifier=entities.get("resource_identifier", ""),
+                access_type=entities.get("access_level", "read"),
+                risk_level=risk_level,
+                justification=entities.get("justification", ""),
+                auto_execute=True,
+            )
+            return {"access_result": result, "status": "access_processed"}
+        except Exception as e:
+            logger.error("process_access_failed", error=str(e))
+            return {"access_result": {"status": "failed"}, "error": str(e), "status": "access_processing_failed"}
 
     async def _request_approval_node(self, state: AIOpsState) -> dict[str, Any]:
-        entities = state["entities"]
-        risk_level = RiskLevel(state["risk_evaluation"].get("risk_level", "medium"))
-        risk_score = state["risk_evaluation"].get("risk_score", 0.5)
-        requester_email = await self._get_user_email(state["user_id"])
-        approval = await self.approval_agent.create_approval_request(
-            request_id=str(uuid.uuid4()),
-            requester_id=state["user_id"],
-            requester_email=requester_email,
-            resource_type=entities.get("resource_type", "unknown"),
-            resource_identifier=entities.get("resource_identifier", ""),
-            access_type=entities.get("access_level", "read"),
-            risk_level=risk_level,
-            risk_score=risk_score,
-            justification=entities.get("justification", ""),
-        )
-        return {"approval_result": approval, "status": "approval_requested"}
+        try:
+            entities = state["entities"]
+            risk_level = RiskLevel(state["risk_evaluation"].get("risk_level", "medium"))
+            risk_score = state["risk_evaluation"].get("risk_score", 0.5)
+            requester_email = await self._get_user_email(state["user_id"])
+            approval = await self.approval_agent.create_approval_request(
+                request_id=str(uuid.uuid4()),
+                requester_id=state["user_id"],
+                requester_email=requester_email,
+                resource_type=entities.get("resource_type", "unknown"),
+                resource_identifier=entities.get("resource_identifier", ""),
+                access_type=entities.get("access_level", "read"),
+                risk_level=risk_level,
+                risk_score=risk_score,
+                justification=entities.get("justification", ""),
+            )
+            return {"approval_result": approval, "status": "approval_requested"}
+        except Exception as e:
+            logger.error("request_approval_failed", error=str(e))
+            return {"approval_result": {"status": "failed"}, "error": str(e), "status": "approval_request_failed"}
 
     async def _get_user_email(self, user_id: str) -> str:
         try:
             from sqlalchemy import select
+
             from app.db.models.user import UserModel
             from app.db.session import get_session
 
             async with get_session() as session:
-                result = await session.execute(select(UserModel.email).where(UserModel.id == user_id))
+                result = await session.execute(
+                    select(UserModel.email).where(UserModel.id == user_id)
+                )
                 row = result.scalar_one_or_none()
                 return str(row) if row else ""
         except Exception:
             return ""
 
     async def _execute_remediation_node(self, state: AIOpsState) -> dict[str, Any]:
-        diagnosis = state.get("diagnosis", {})
-        remediation_steps = diagnosis.get("recommended_remediation", [])
-        results: list[dict[str, Any]] = []
-        for step in remediation_steps:
-            if step.get("tool") and not step.get("automated", False):
-                result = await self.troubleshooting_agent.execute_remediation(step, dry_run=True)
-                results.append(result)
-        return {"remediation": {"steps": remediation_steps, "results": results}, "status": "remediation_executed"}
+        try:
+            diagnosis = state.get("diagnosis", {})
+            remediation_steps = diagnosis.get("recommended_remediation", [])
+            results: list[dict[str, Any]] = []
+            for step in remediation_steps:
+                if step.get("tool") and not step.get("automated", False):
+                    result = await self.troubleshooting_agent.execute_remediation(step, dry_run=True)
+                    results.append(result)
+            return {
+                "remediation": {"steps": remediation_steps, "results": results},
+                "status": "remediation_executed",
+            }
+        except Exception as e:
+            logger.error("execute_remediation_failed", error=str(e))
+            return {"remediation": {"steps": [], "results": []}, "error": str(e), "status": "remediation_failed"}
 
     async def _notify_node(self, state: AIOpsState) -> dict[str, Any]:
         intent = state["intent"]
@@ -242,7 +288,7 @@ class AIOpsWorkflow:
             if risk_eval.get("auto_approve"):
                 await self.notification_agent.notify_user(
                     user_id=state["user_id"],
-                    message=f"Your access request has been auto-approved.",
+                    message="Your access request has been auto-approved.",
                     title="Access Request Approved",
                 )
             else:
@@ -291,10 +337,13 @@ class AIOpsWorkflow:
             diagnosis = state.get("diagnosis", {})
             return (
                 f"**Root Cause Analysis:**\n{diagnosis.get('root_cause_analysis', 'Pending analysis')}\n\n"
-                f"**Recommended Remediation:**\n" +
-                "\n".join(f"- {r.get('action', 'N/A')}" for r in diagnosis.get("recommended_remediation", []))
+                f"**Recommended Remediation:**\n"
+                + "\n".join(
+                    f"- {r.get('action', 'N/A')}"
+                    for r in diagnosis.get("recommended_remediation", [])
+                )
             )
-        elif intent in (IntentType.LOW_RISK_ACCESS.value, IntentType.HIGH_RISK_ACCESS.value):
+        if intent in (IntentType.LOW_RISK_ACCESS.value, IntentType.HIGH_RISK_ACCESS.value):
             risk_eval = state.get("risk_evaluation", {})
             access_result = state.get("access_result", {})
             approval_result = state.get("approval_result", {})
@@ -306,7 +355,9 @@ class AIOpsWorkflow:
                 f"Status: {approval_result.get('status', 'pending')}"
             )
         knowledge = state.get("knowledge_results", {})
-        return knowledge.get("answer", "I've searched our knowledge base. Please check the results.")
+        return knowledge.get(
+            "answer", "I've searched our knowledge base. Please check the results."
+        )
 
     async def run(
         self,
@@ -342,7 +393,17 @@ class AIOpsWorkflow:
             "start_time": time.monotonic(),
         }
         config = {"configurable": {"thread_id": session_id}}
-        final_state = await self.graph.ainvoke(initial_state, config=config)
+        try:
+            final_state = await self.graph.ainvoke(initial_state, config=config)
+        except Exception as e:
+            logger.error("workflow_execution_failed", error=str(e))
+            return {
+                "session_id": session_id,
+                "response": "An error occurred while processing your request. Please try again.",
+                "intent": "",
+                "status": "failed",
+                "metadata": {"error": str(e)},
+            }
         return {
             "session_id": session_id,
             "response": final_state.get("response", ""),

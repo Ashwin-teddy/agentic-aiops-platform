@@ -1,19 +1,20 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from app.core.config.settings import settings
-from app.core.llm.adapters.base import BaseEmbeddingAdapter
-from app.core.llm.adapters.openai_adapter import OpenAIEmbeddingAdapter
 from app.core.llm.adapters.ollama_adapter import OllamaEmbeddingAdapter
+from app.core.llm.adapters.openai_adapter import OpenAIEmbeddingAdapter
 from app.core.llm.types import (
+    AVAILABLE_MODELS,
     ModelConfig,
     ModelProvider,
-    AVAILABLE_MODELS,
-    TaskType,
     apply_environment_overrides,
 )
 from app.observability.logging import get_logger
+
+if TYPE_CHECKING:
+    from app.core.llm.adapters.base import BaseEmbeddingAdapter
 
 logger = get_logger(__name__)
 
@@ -35,7 +36,7 @@ class EmbeddingRouter:
     def _create_adapter(self, config: ModelConfig) -> BaseEmbeddingAdapter:
         if config.provider == ModelProvider.OPENAI:
             return OpenAIEmbeddingAdapter(config)
-        elif config.provider == ModelProvider.OLLAMA:
+        if config.provider == ModelProvider.OLLAMA:
             return OllamaEmbeddingAdapter(config)
         raise ValueError(f"Embedding not supported for provider: {config.provider}")
 

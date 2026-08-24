@@ -2,13 +2,15 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, Field
 
-from app.domain.enums.access import AccessType, ResourceType
-from app.domain.enums.status import TaskStatus
 from app.domain.enums.risk import RiskLevel
+from app.domain.enums.status import TaskStatus
+
+if TYPE_CHECKING:
+    from app.domain.enums.access import AccessType, ResourceType
 
 
 class AccessRequest(BaseModel):

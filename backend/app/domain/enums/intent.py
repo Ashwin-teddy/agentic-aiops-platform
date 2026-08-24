@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class IntentType(str, Enum):
+class IntentType(StrEnum):
     TROUBLESHOOTING = "troubleshooting"
     LOW_RISK_ACCESS = "low_risk_access"
     HIGH_RISK_ACCESS = "high_risk_access"

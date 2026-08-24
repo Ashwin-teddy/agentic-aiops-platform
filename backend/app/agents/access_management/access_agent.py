@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
-from app.domain.enums.access import AccessType, ResourceType
 from app.domain.enums.risk import RiskLevel
 from app.domain.enums.status import TaskStatus
-from app.tools.base.tool_registry import get_tool_registry
 from app.observability.logging import get_logger
+from app.tools.base.tool_registry import get_tool_registry
 
 logger = get_logger(__name__)
 
@@ -49,14 +48,18 @@ class AccessManagementAgent:
             "access_type": access_type,
             "risk_level": risk_level.value,
             "status": "pending",
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
         }
         if risk_level == RiskLevel.LOW and auto_execute:
             execution_result = await self._execute_access_grant(
                 resource_type, resource_identifier, access_type, user_id
             )
             result["execution_result"] = execution_result
-            result["status"] = TaskStatus.COMPLETED.value if execution_result.get("success") else TaskStatus.FAILED.value
+            result["status"] = (
+                TaskStatus.COMPLETED.value
+                if execution_result.get("success")
+                else TaskStatus.FAILED.value
+            )
         else:
             result["status"] = TaskStatus.WAITING_APPROVAL.value
             result["message"] = "Access request requires approval"
@@ -78,7 +81,10 @@ class AccessManagementAgent:
     ) -> dict[str, Any]:
         tool_name = RESOURCE_TOOL_MAP.get(resource_type)
         if not tool_name:
-            return {"success": False, "error": f"No tool available for resource type: {resource_type}"}
+            return {
+                "success": False,
+                "error": f"No tool available for resource type: {resource_type}",
+            }
         tool = self.tool_registry.get(tool_name)
         if not tool:
             return {"success": False, "error": f"Tool '{tool_name}' not registered"}
@@ -91,17 +97,21 @@ class AccessManagementAgent:
     ) -> dict[str, Any]:
         if resource_type == "github":
             return {"action": "list_prs", "repo": resource_identifier}
-        elif resource_type == "jira":
+        if resource_type == "jira":
             return {"action": "get_issue", "issue_key": resource_identifier}
-        elif resource_type == "azure_ad":
+        if resource_type == "azure_ad":
             if access_type == "read":
                 return {"action": "get_user", "user_id": user_id}
             return {"action": "add_to_group", "user_id": user_id, "group_id": resource_identifier}
-        elif resource_type == "aws_iam":
+        if resource_type == "aws_iam":
             if access_type == "read":
                 return {"action": "list_users"}
-            return {"action": "attach_policy", "username": user_id, "policy_arn": resource_identifier}
-        elif resource_type == "kubernetes":
+            return {
+                "action": "attach_policy",
+                "username": user_id,
+                "policy_arn": resource_identifier,
+            }
+        if resource_type == "kubernetes":
             return {"action": "list_pods", "namespace": resource_identifier}
         return {"action": "get_user", "user_id": user_id}
 
@@ -112,4 +122,7 @@ class AccessManagementAgent:
         if not tool_name:
             return {"success": False, "error": f"No tool for resource: {resource_type}"}
         logger.info("access_revoked", resource=resource_type, user=user_id)
-        return {"success": True, "message": f"Access revoked for user {user_id} on {resource_type}/{resource_identifier}"}
+        return {
+            "success": True,
+            "message": f"Access revoked for user {user_id} on {resource_type}/{resource_identifier}",
+        }

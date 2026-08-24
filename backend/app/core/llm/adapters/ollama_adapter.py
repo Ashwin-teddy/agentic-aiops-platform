@@ -2,20 +2,23 @@ from __future__ import annotations
 
 import asyncio
 import json
-from typing import Any, AsyncGenerator
+from typing import TYPE_CHECKING, Any
 
 import httpx
 
-from app.core.llm.adapters.base import BaseLLMAdapter, BaseEmbeddingAdapter
+from app.core.llm.adapters.base import BaseEmbeddingAdapter, BaseLLMAdapter
 from app.core.llm.types import (
+    EmbeddingResult,
     LLMMessage,
     LLMResponse,
     LLMUsage,
-    EmbeddingResult,
     ModelConfig,
     ModelProvider,
 )
 from app.observability.logging import get_logger
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 logger = get_logger(__name__)
 
@@ -33,10 +36,13 @@ async def _post_with_retry(
         try:
             response = await client.post(url, json=payload, headers=headers)
             if response.status_code in RETRYABLE_STATUS and attempt < MAX_RETRIES - 1:
-                delay = 0.5 * (2 ** attempt)
+                delay = 0.5 * (2**attempt)
                 logger.warning(
-                    "ollama_retry", url=url, status=response.status_code,
-                    attempt=attempt + 1, retry_in_s=delay,
+                    "ollama_retry",
+                    url=url,
+                    status=response.status_code,
+                    attempt=attempt + 1,
+                    retry_in_s=delay,
                 )
                 await asyncio.sleep(delay)
                 continue
@@ -44,10 +50,13 @@ async def _post_with_retry(
         except (httpx.ConnectError, httpx.TimeoutException) as e:
             if attempt >= MAX_RETRIES - 1:
                 raise
-            delay = 0.5 * (2 ** attempt)
+            delay = 0.5 * (2**attempt)
             logger.warning(
-                "ollama_retry_connect", url=url, error=str(e),
-                attempt=attempt + 1, retry_in_s=delay,
+                "ollama_retry_connect",
+                url=url,
+                error=str(e),
+                attempt=attempt + 1,
+                retry_in_s=delay,
             )
             await asyncio.sleep(delay)
     raise httpx.ConnectError("all retries failed")
@@ -83,17 +92,21 @@ class OllamaAdapter(BaseLLMAdapter):
         if tools and self.config.supports_tools:
             ollama_tools = []
             for t in tools:
-                ollama_tools.append({
-                    "type": "function",
-                    "function": {
-                        "name": t.get("name", ""),
-                        "description": t.get("description", ""),
-                        "parameters": t.get("parameters", {"type": "object", "properties": {}}),
-                    },
-                })
+                ollama_tools.append(
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": t.get("name", ""),
+                            "description": t.get("description", ""),
+                            "parameters": t.get("parameters", {"type": "object", "properties": {}}),
+                        },
+                    }
+                )
             payload["tools"] = ollama_tools
         async with httpx.AsyncClient(timeout=300) as client:
-            response = await _post_with_retry(client, f"{self.base_url}/api/chat", payload, self.headers)
+            response = await _post_with_retry(
+                client, f"{self.base_url}/api/chat", payload, self.headers
+            )
             response.raise_for_status()
             data = response.json()
         message = data.get("message", {})
@@ -102,13 +115,15 @@ class OllamaAdapter(BaseLLMAdapter):
         if message.get("tool_calls"):
             for tc in message["tool_calls"]:
                 func = tc.get("function", {})
-                tool_calls.append({
-                    "id": f"call_{func.get('name', 'unknown')}",
-                    "function": {
-                        "name": func.get("name", ""),
-                        "arguments": json.dumps(func.get("arguments", {})),
-                    },
-                })
+                tool_calls.append(
+                    {
+                        "id": f"call_{func.get('name', 'unknown')}",
+                        "function": {
+                            "name": func.get("name", ""),
+                            "arguments": json.dumps(func.get("arguments", {})),
+                        },
+                    }
+                )
         usage_data = data.get("prompt_eval_count", 0)
         completion_tokens = data.get("eval_count", 0)
         usage = LLMUsage(
@@ -139,10 +154,15 @@ class OllamaAdapter(BaseLLMAdapter):
             "model": self.model_id,
             "messages": api_messages,
             "stream": True,
-            "options": {"temperature": temperature, "num_predict": max_tokens or self.config.max_tokens},
+            "options": {
+                "temperature": temperature,
+                "num_predict": max_tokens or self.config.max_tokens,
+            },
         }
         async with httpx.AsyncClient(timeout=300) as client:
-            async with client.stream("POST", f"{self.base_url}/api/chat", json=payload, headers=self.headers) as response:
+            async with client.stream(
+                "POST", f"{self.base_url}/api/chat", json=payload, headers=self.headers
+            ) as response:
                 async for line in response.aiter_lines():
                     if line.strip():
                         try:
@@ -173,7 +193,9 @@ class OllamaEmbeddingAdapter(BaseEmbeddingAdapter):
             "input": texts,
         }
         async with httpx.AsyncClient(timeout=300) as client:
-            response = await _post_with_retry(client, f"{self.base_url}/api/embed", payload, self.headers)
+            response = await _post_with_retry(
+                client, f"{self.base_url}/api/embed", payload, self.headers
+            )
             response.raise_for_status()
             data = response.json()
         embeddings = data.get("embeddings", [])

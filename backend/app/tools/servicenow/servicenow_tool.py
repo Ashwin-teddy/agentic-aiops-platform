@@ -24,9 +24,12 @@ class ServiceNowTool(BaseTool):
     async def _request(self, method: str, path: str, **kwargs: Any) -> dict[str, Any]:
         async with httpx.AsyncClient() as client:
             resp = await client.request(
-                method, f"{self.base_url}{path}",
-                auth=self.auth, headers=self.headers,
-                timeout=self.timeout_seconds, **kwargs,
+                method,
+                f"{self.base_url}{path}",
+                auth=self.auth,
+                headers=self.headers,
+                timeout=self.timeout_seconds,
+                **kwargs,
             )
             resp.raise_for_status()
             return resp.json()
@@ -37,20 +40,26 @@ class ServiceNowTool(BaseTool):
             sys_id = kwargs["sys_id"]
             data = await self._request("GET", f"/table/incident/{sys_id}")
             return ToolResult(success=True, data=data.get("result", {}))
-        elif action == "create_incident":
-            data = await self._request("POST", "/table/incident", json={
-                "short_description": kwargs.get("short_description", ""),
-                "description": kwargs.get("description", ""),
-                "urgency": kwargs.get("urgency", "3"),
-                "impact": kwargs.get("impact", "3"),
-                "assignment_group": kwargs.get("assignment_group", ""),
-            })
+        if action == "create_incident":
+            data = await self._request(
+                "POST",
+                "/table/incident",
+                json={
+                    "short_description": kwargs.get("short_description", ""),
+                    "description": kwargs.get("description", ""),
+                    "urgency": kwargs.get("urgency", "3"),
+                    "impact": kwargs.get("impact", "3"),
+                    "assignment_group": kwargs.get("assignment_group", ""),
+                },
+            )
             return ToolResult(success=True, data=data.get("result", {}))
-        elif action == "search_knowledge":
+        if action == "search_knowledge":
             query = kwargs.get("query", "")
-            data = await self._request("GET", f"/table/knowledge_base?sysparm_query=textLIKE{query}&sysparm_limit=10")
+            data = await self._request(
+                "GET", f"/table/knowledge_base?sysparm_query=textLIKE{query}&sysparm_limit=10"
+            )
             return ToolResult(success=True, data=data.get("result", []))
-        elif action == "get_cmdb":
+        if action == "get_cmdb":
             sys_id = kwargs.get("sys_id")
             data = await self._request("GET", f"/table/cmdb_ci/{sys_id}")
             return ToolResult(success=True, data=data.get("result", {}))

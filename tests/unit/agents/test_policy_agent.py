@@ -7,7 +7,9 @@ from app.domain.enums.risk import RiskLevel
 class TestPolicyAgent:
     @pytest.fixture
     def agent(self) -> PolicyAgent:
-        return PolicyAgent()
+        agent = PolicyAgent()
+        agent.org_memory.get_policy = AsyncMock(return_value=None)
+        return agent
 
     @pytest.mark.asyncio
     async def test_low_risk_jira_read(self, agent: PolicyAgent) -> None:

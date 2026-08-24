@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from urllib.parse import urlencode
 
@@ -21,7 +21,9 @@ GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo"
 GOOGLE_DRIVE_PERMISSIONS_URL = "https://www.googleapis.com/drive/v3/files/{file_id}/permissions"
 
-DRIVE_SCOPES = "https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/userinfo.email"
+DRIVE_SCOPES = (
+    "https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/userinfo.email"
+)
 
 ROLE_MAP = {
     "read": "reader",
@@ -91,7 +93,7 @@ class GoogleDriveService:
             userinfo_response.raise_for_status()
             userinfo = userinfo_response.json()
         google_email = userinfo.get("email", "")
-        expiry = datetime.now(timezone.utc) + timedelta(seconds=int(expires_in))
+        expiry = datetime.now(UTC) + timedelta(seconds=int(expires_in))
 
         async with get_session() as session:
             result = await session.execute(
@@ -137,18 +139,22 @@ class GoogleDriveService:
             )
             model = result.scalar_one_or_none()
             if model is None:
-                raise ValueError("Google Drive is not connected. Connect it in the Access page first.")
+                raise ValueError(
+                    "Google Drive is not connected. Connect it in the Access page first."
+                )
             access_token = decrypt_value(model.access_token)
             refresh_token = decrypt_value(model.refresh_token)
             expiry = model.token_expiry
 
         if expiry.tzinfo is None:
-            expiry = expiry.replace(tzinfo=timezone.utc)
-        if datetime.now(timezone.utc) < expiry - timedelta(minutes=5):
+            expiry = expiry.replace(tzinfo=UTC)
+        if datetime.now(UTC) < expiry - timedelta(minutes=5):
             return access_token
 
         if not refresh_token:
-            raise ValueError("Google Drive refresh token is missing. Reconnect your Google account.")
+            raise ValueError(
+                "Google Drive refresh token is missing. Reconnect your Google account."
+            )
         payload = {
             "client_id": settings.google_oauth_client_id,
             "client_secret": settings.google_oauth_client_secret,
@@ -162,7 +168,7 @@ class GoogleDriveService:
         new_access_token = data.get("access_token", "")
         if not new_access_token:
             raise ValueError("Failed to refresh Google Drive access token")
-        new_expiry = datetime.now(timezone.utc) + timedelta(seconds=int(data.get("expires_in", 3600)))
+        new_expiry = datetime.now(UTC) + timedelta(seconds=int(data.get("expires_in", 3600)))
 
         async with get_session() as session:
             result = await session.execute(
@@ -186,7 +192,10 @@ class GoogleDriveService:
             return {"success": False, "error": "Requester email is missing"}
         file_id = extract_drive_id(resource_identifier)
         if not file_id:
-            return {"success": False, "error": "Could not determine a Google Drive file or folder ID"}
+            return {
+                "success": False,
+                "error": "Could not determine a Google Drive file or folder ID",
+            }
         role = ROLE_MAP.get(access_type, "reader")
         try:
             access_token = await self._get_access_token(user_id)

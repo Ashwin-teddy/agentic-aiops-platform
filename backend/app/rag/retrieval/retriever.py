@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import Any
 
 from app.core.config.settings import settings
+from app.observability.logging import get_logger
 from app.rag.embeddings.embedding_service import EmbeddingService
 from app.rag.vector_store.qdrant_store import QdrantVectorStore
-from app.observability.logging import get_logger
 
 logger = get_logger(__name__)
 

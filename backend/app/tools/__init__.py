@@ -1,12 +1,21 @@
 __all__ = [
-    "AzureADTool", "OktaTool", "ServiceNowTool", "JiraTool", "GitHubTool",
-    "AWSIAMTool", "KubernetesTool", "SlackTool", "MicrosoftTeamsTool",
-    "EmailTool", "RestAPITool",
+    "AzureADTool",
+    "OktaTool",
+    "ServiceNowTool",
+    "JiraTool",
+    "GitHubTool",
+    "AWSIAMTool",
+    "KubernetesTool",
+    "SlackTool",
+    "MicrosoftTeamsTool",
+    "EmailTool",
+    "RestAPITool",
 ]
 
 
 def _lazy_import(name: str):
     import importlib
+
     _MAP = {
         "AzureADTool": "app.tools.azure_ad.azure_ad_tool",
         "OktaTool": "app.tools.okta.okta_tool",

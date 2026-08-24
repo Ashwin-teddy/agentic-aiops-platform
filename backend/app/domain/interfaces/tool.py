@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import uuid
 from abc import ABC, abstractmethod
 from typing import Any
 
@@ -20,16 +19,13 @@ class BaseTool(ABC):
     required_permissions: list[str] = []
 
     @abstractmethod
-    async def execute(self, **kwargs: Any) -> ToolResult:
-        ...
+    async def execute(self, **kwargs: Any) -> ToolResult: ...
 
     @abstractmethod
-    async def validate_params(self, **kwargs: Any) -> bool:
-        ...
+    async def validate_params(self, **kwargs: Any) -> bool: ...
 
     @abstractmethod
-    async def health_check(self) -> bool:
-        ...
+    async def health_check(self) -> bool: ...
 
     def to_schema(self) -> dict[str, Any]:
         return {

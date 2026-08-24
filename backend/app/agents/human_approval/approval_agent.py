@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
-from typing import Any
+from datetime import UTC, datetime, timedelta
+from typing import TYPE_CHECKING, Any
 
-from app.domain.enums.status import ApprovalStatus, TaskStatus
-from app.domain.enums.risk import RiskLevel
-from app.tools.base.tool_registry import get_tool_registry
+from app.domain.enums.status import ApprovalStatus
 from app.observability.logging import get_logger
+from app.tools.base.tool_registry import get_tool_registry
+
+if TYPE_CHECKING:
+    from app.domain.enums.risk import RiskLevel
 
 logger = get_logger(__name__)
 
@@ -50,12 +52,16 @@ class HumanApprovalAgent:
             "status": ApprovalStatus.PENDING.value,
             "required_approvers": required_approvers or [],
             "approvals_received": {},
-            "created_at": datetime.now(timezone.utc).isoformat(),
-            "expires_at": (datetime.now(timezone.utc) + timedelta(minutes=self.approval_timeout_minutes)).isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
+            "expires_at": (
+                datetime.now(UTC) + timedelta(minutes=self.approval_timeout_minutes)
+            ).isoformat(),
         }
         self.pending_approvals[approval_id] = approval
         await self._send_approval_notification(approval)
-        logger.info("approval_request_created", approval_id=approval_id, risk_level=risk_level.value)
+        logger.info(
+            "approval_request_created", approval_id=approval_id, risk_level=risk_level.value
+        )
         return approval
 
     async def submit_approval(
@@ -70,25 +76,26 @@ class HumanApprovalAgent:
             return {"success": False, "error": "Approval request not found"}
         if approval["status"] != ApprovalStatus.PENDING.value:
             return {"success": False, "error": f"Approval already {approval['status']}"}
-        if datetime.fromisoformat(approval["expires_at"]) < datetime.now(timezone.utc):
+        if datetime.fromisoformat(approval["expires_at"]) < datetime.now(UTC):
             approval["status"] = ApprovalStatus.EXPIRED.value
             return {"success": False, "error": "Approval request has expired"}
         approval["approvals_received"][approver_id] = {
             "decision": decision,
             "comments": comments,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
         required = set(approval["required_approvers"])
         received_approvals = {
-            aid: data for aid, data in approval["approvals_received"].items()
+            aid: data
+            for aid, data in approval["approvals_received"].items()
             if data["decision"] == "approved"
         }
         if any(data["decision"] == "rejected" for data in approval["approvals_received"].values()):
             approval["status"] = ApprovalStatus.REJECTED.value
-            approval["rejected_at"] = datetime.now(timezone.utc).isoformat()
+            approval["rejected_at"] = datetime.now(UTC).isoformat()
         elif not required or required.issubset(set(received_approvals.keys())):
             approval["status"] = ApprovalStatus.APPROVED.value
-            approval["approved_at"] = datetime.now(timezone.utc).isoformat()
+            approval["approved_at"] = datetime.now(UTC).isoformat()
         logger.info(
             "approval_decision",
             approval_id=approval_id,
@@ -103,7 +110,7 @@ class HumanApprovalAgent:
         if not approval:
             return {"found": False}
         if approval["status"] == ApprovalStatus.PENDING.value:
-            if datetime.fromisoformat(approval["expires_at"]) < datetime.now(timezone.utc):
+            if datetime.fromisoformat(approval["expires_at"]) < datetime.now(UTC):
                 approval["status"] = ApprovalStatus.EXPIRED.value
         return {"found": True, "approval": approval}
 
@@ -111,7 +118,10 @@ class HumanApprovalAgent:
         pending = []
         for approval in self.pending_approvals.values():
             if approval["status"] == ApprovalStatus.PENDING.value:
-                if approver_id in approval["required_approvers"] or not approval["required_approvers"]:
+                if (
+                    approver_id in approval["required_approvers"]
+                    or not approval["required_approvers"]
+                ):
                     pending.append(approval)
         return pending
 

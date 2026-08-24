@@ -60,12 +60,15 @@ class PlannerAgent:
         context: dict | None = None,
     ) -> dict:
         messages = [
-            LLMMessage(role="system", content=PLANNER_PROMPT.format(
-                intent=intent.value,
-                entities=json.dumps(entities),
-                tools=json.dumps([t["name"] for t in available_tools]),
-                context=json.dumps(context or {}),
-            )),
+            LLMMessage(
+                role="system",
+                content=PLANNER_PROMPT.format(
+                    intent=intent.value,
+                    entities=json.dumps(entities),
+                    tools=json.dumps([t["name"] for t in available_tools]),
+                    context=json.dumps(context or {}),
+                ),
+            ),
             LLMMessage(role="user", content="Create an execution plan for this request."),
         ]
         try:
@@ -95,28 +98,61 @@ class PlannerAgent:
                 "workflow_type": "troubleshooting",
                 "risk_level": "low",
                 "steps": [
-                    {"step_id": 1, "agent": "troubleshooting", "action": "collect_diagnostics", "depends_on": []},
+                    {
+                        "step_id": 1,
+                        "agent": "troubleshooting",
+                        "action": "collect_diagnostics",
+                        "depends_on": [],
+                    },
                     {"step_id": 2, "agent": "rag", "action": "search_knowledge", "depends_on": [1]},
-                    {"step_id": 3, "agent": "troubleshooting", "action": "analyze_root_cause", "depends_on": [1, 2]},
-                    {"step_id": 4, "agent": "notification", "action": "notify_user", "depends_on": [3]},
+                    {
+                        "step_id": 3,
+                        "agent": "troubleshooting",
+                        "action": "analyze_root_cause",
+                        "depends_on": [1, 2],
+                    },
+                    {
+                        "step_id": 4,
+                        "agent": "notification",
+                        "action": "notify_user",
+                        "depends_on": [3],
+                    },
                     {"step_id": 5, "agent": "audit", "action": "log_execution", "depends_on": [3]},
                 ],
                 "estimated_duration_seconds": 120,
                 "required_approvals": [],
             }
-        elif intent in (IntentType.LOW_RISK_ACCESS, IntentType.HIGH_RISK_ACCESS):
+        if intent in (IntentType.LOW_RISK_ACCESS, IntentType.HIGH_RISK_ACCESS):
             return {
                 "workflow_type": "access_request",
                 "risk_level": "low" if intent == IntentType.LOW_RISK_ACCESS else "high",
                 "steps": [
                     {"step_id": 1, "agent": "policy", "action": "evaluate_risk", "depends_on": []},
-                    {"step_id": 2, "agent": "access_management", "action": "process_request", "depends_on": [1]},
-                    {"step_id": 3, "agent": "human_approval", "action": "get_approval", "depends_on": [1], "requires_approval": True},
-                    {"step_id": 4, "agent": "notification", "action": "notify_user", "depends_on": [2, 3]},
+                    {
+                        "step_id": 2,
+                        "agent": "access_management",
+                        "action": "process_request",
+                        "depends_on": [1],
+                    },
+                    {
+                        "step_id": 3,
+                        "agent": "human_approval",
+                        "action": "get_approval",
+                        "depends_on": [1],
+                        "requires_approval": True,
+                    },
+                    {
+                        "step_id": 4,
+                        "agent": "notification",
+                        "action": "notify_user",
+                        "depends_on": [2, 3],
+                    },
                     {"step_id": 5, "agent": "audit", "action": "log_execution", "depends_on": [2]},
                 ],
                 "estimated_duration_seconds": 60,
-                "required_approvals": ["manager", "security"] if intent == IntentType.HIGH_RISK_ACCESS else [],
+                "required_approvals": ["manager", "security"]
+                if intent == IntentType.HIGH_RISK_ACCESS
+                else [],
             }
         return {
             "workflow_type": "general",

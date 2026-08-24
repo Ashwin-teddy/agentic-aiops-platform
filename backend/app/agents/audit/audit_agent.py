@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from app.observability.logging import get_logger
@@ -42,7 +42,7 @@ class AuditAgent:
             "error_message": error_message,
             "ip_address": ip_address,
             "user_agent": user_agent,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
         self.audit_logs.append(log_entry)
         logger.info(
@@ -84,9 +84,11 @@ class AuditAgent:
         event_type: str,
         details: dict[str, Any],
         ip_address: str = "",
+        session_id: str = "",
     ) -> dict[str, Any]:
         return await self.log_action(
             user_id=user_id,
+            session_id=session_id,
             action=f"security.{event_type}",
             resource_type="security",
             details=details,

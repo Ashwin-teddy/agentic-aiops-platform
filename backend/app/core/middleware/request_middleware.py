@@ -2,15 +2,18 @@ from __future__ import annotations
 
 import time
 import uuid
-from typing import Callable, Any
+from typing import TYPE_CHECKING
 
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request
-from starlette.responses import Response
 
 from app.observability.logging import get_logger
 from app.observability.metrics import REQUEST_COUNT, REQUEST_LATENCY
-from app.core.security.encryption import mask_pii
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from starlette.requests import Request
+    from starlette.responses import Response
 
 logger = get_logger(__name__)
 
